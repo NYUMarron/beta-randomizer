@@ -1,13 +1,13 @@
 #!/usr/bin/python2.7
 
-"""Convert CSV to reStructuredText tables
-#source https://acaird.github.io/2016/02/07/simple-python-gui
+"""
 
-A command-line and PythonTk GUI program to do a simple conversion from
-CSV files to reStructuredText tables
+Stratified random sample generator for Betagov.
+Author: S. Arango Franco - sarangof@nyu.edu.
 
-A. Caird (acaird@gmail.com)
-2016
+Some of A. Caird's code (https://acaird.github.io/2016/02/07/simple-python-gui) is used for the interface.
+
+2017.
 
 """
 
@@ -19,8 +19,7 @@ import numpy as np
 
 
 def gui():
-    """make the GUI version of this command that is run if no options are
-    provided on the command line"""
+    """Build the gui"""
 
     def button_browse_callback():
         """ What to do when the Browse button is pressed """
@@ -46,24 +45,46 @@ def gui():
             
 
     def button_stratify_callback():
+        for cols,vs in var_dict.iteritems():
+            if vs.get():
+                strat_columns.append(cols)
+        print(strat_columns)
         """ what to do when the "Go" button is pressed """
-        try:
-            sample_size = int(entry.get())
-            n = len(data)
-            if 1 <= sample_size <= n:
-                prefix = stratify(sample_size,strat_columns)
-                if prefix is None:
-                    statusText.set("Error creating random sample.")
-                    message.configure(fg="red")
-                else:
-                    statusText.set("Output is in {}".format(prefix + '_RCT.csv'))
-                    message.configure(fg="black")
-            else: 
-                statusText.set("Please enter a number between 1 and "+str(n))
-                message.configure(fg="red")   
-        except ValueError:
-            statusText.set("Please enter a whole number.")
-            message.configure(fg="red")
+        # try:
+        #     sample_size = int(entry.get())
+        #     n = len(data)
+        #     if 1 <= sample_size <= n:
+        #         prefix = stratify(sample_size,candidate_vbles(strat_columns))
+        #         if prefix is None:
+        #             statusText.set("Error creating random sample.")
+        #             message.configure(fg="red")
+        #         else:
+        #             statusText.set("Output is in {}".format(prefix + '_RCT.csv'))
+        #             message.configure(fg="black")
+        #     else: 
+        #         statusText.set("Please enter a number between 1 and "+str(n))
+        #         message.configure(fg="red")   
+        # except ValueError:
+        #     statusText.set("Please enter a whole number.")
+        #     message.configure(fg="red")
+
+    def candidate_vbles(list_columns):
+        """
+        Transform the initial set of columns into valid potential strata.
+        """
+        for col in list_columns:
+            if "DOB" in col:
+                pass
+            if "CCIS" in col:
+                list_columns = list_columns.remove(col)
+            if (col == "PO") or (col=="Judge"):
+                print("Wrong!")
+                #statusText.set("We suggest not to randomize based on parole officers or judges.")
+                #message.configure(fg="red")   
+            if ("name" in col) or ("Name" in col) or ("Surname" in col): #regex are a good thing.
+                list_columns = list_columns.remove(col)
+
+        return list_columns
 
 
     def stratify(sample_size,strat_columns=['Sex']):
@@ -76,14 +97,7 @@ def gui():
         """
         if data is not None:
             try:    
-                # data['fake'] = 'CONTROL'
-                # data['fake'][[5, 0, 7, 8]] = 'TEST'
-                # data_list = []
-                # for cols in strat_columns:
-                #     data_pre = data[data[cols].isin(data[cols].value_counts()[data[cols].value_counts()<2].index)]
-                #     data_list.append(data_pre)
-                #     del(data_pre)
-                # data_pre = pd.concat(data_list)
+
                 sss = StratifiedShuffleSplit(n_splits=1, test_size=sample_size, random_state=2)
                 #y = np.array(data[~data.isin(data_pre).T.any()][strat_columns])
                 y = np.array(data[strat_columns])
@@ -154,11 +168,11 @@ def gui():
         frame_B = tk.Toplevel(root)
 
         # Declare variables and set initial values
-        global sample_size, strat_columns, statusText, message, entry
+        global sample_size, strat_columns, statusText, message, entry, var_dict, strat_columns
         statusText = tk.StringVar(frame_B)
         statusText.set("An empty selection with result in randomizing by Risk, Sex and Race, if possible.")
-        var_list = []
         strat_columns = []
+        var_dict = {}
 
         # Create explanatory label
         label = tk.Label(frame_B, text="Please enter choose a size for the test population that is lower than "+str(len(data)))
@@ -166,19 +180,16 @@ def gui():
         entry = tk.Entry(frame_B, width=50)
         entry.pack()
 
-        
-
         for col in list(data):
-            var_temp = tk.Variable()   
-            var_list.append(var_temp)
+            var_temp = tk.StringVar()   
             l = tk.Checkbutton(frame_B, text=col, variable=var_temp)
             l.pack()  
+            var_dict[col] = var_temp
 
         button_stratify = tk.Button(frame_B,
            text="Generate sample",
            command=button_stratify_callback)
-        
-
+    
         button_exit = tk.Button(frame_B ,
                      text="Exit",
                      command=tk.sys.exit)
@@ -190,28 +201,12 @@ def gui():
         message.configure(fg="black")
         message.pack()
 
-
-
-
      
     first_frame()
     tk.mainloop()
 
 
-def get_parser():
-    """ The argument parser of the command-line version """
-    parser = argparse.ArgumentParser(description=('convert csv to rst table'))
-
-    parser.add_argument('--input', '-F',
-                        help='name of the intput file')
-
-    parser.add_argument('--output', '-O',
-                        help=("name of the output file; " +
-                              "defaults to <inputfilename>.rst"))
-    return parser
-
-
 if __name__ == "__main__":
     """ Run as a stand-alone script """
 
-    gui()                   # otherwise run the GUI version
+    gui() 
