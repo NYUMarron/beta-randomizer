@@ -11,14 +11,14 @@ Some of A. Caird's code (https://acaird.github.io/2016/02/07/simple-python-gui) 
 
 """
 
-import tkFileDialog
+import tkFileDialog, tkMessageBox
 import Tkinter as tk
 import pandas as pd 
-from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
-import numpy as np
+import datetime as dt
+from beta_functions import *
 
 
-def gui():
+if __name__ == "__main__":
     """Build the gui"""
 
     def button_browse_callback():
@@ -42,83 +42,62 @@ def gui():
                 second_frame()
             except:
                 statusText.set("Error reading file" + filename)
-            
 
     def button_stratify_callback():
+        """ what to do when the "Go" button is pressed """
+        raise_vble_warning = False
+        warned = False
+        cont_warnings = 0
         for cols,vs in var_dict.iteritems():
             if vs.get():
-                strat_columns.append(cols)
+                if "DOB" in cols:
+                    temp_dates = []
+                    for dob in data[cols]:
+                        birth_year = int(dt.datetime.strptime(dob,'%d/%M/%y').year)
+                        if birth_year > 2000:
+                            birth_year -= 100
+                        age = dt.datetime.now().year - birth_year
+                        if 0 <= age <= 25:
+                            temp_dates.append('Lower than 25')
+                        elif 25 <= age <= 60:
+                            temp_dates.append('Between 25 and 60')
+                        elif 60 <= age <= 100:
+                            temp_dates.append('Older than 60')
+                        else:
+                            temp_dates.append('')
+                    del(data[cols])
+                    data[cols] = temp_dates
+                elif (cols == "PO") or (cols=="Judge"):
+                    raise_vble_warning = True
+                else:
+                    strat_columns.append(cols)
+        if strat_columns == []:
+            strat_columns = ['Sex','Risk','Race']
         print(strat_columns)
-        """ what to do when the "Go" button is pressed """
-        # try:
-        #     sample_size = int(entry.get())
-        #     n = len(data)
-        #     if 1 <= sample_size <= n:
-        #         prefix = stratify(sample_size,candidate_vbles(strat_columns))
-        #         if prefix is None:
-        #             statusText.set("Error creating random sample.")
-        #             message.configure(fg="red")
-        #         else:
-        #             statusText.set("Output is in {}".format(prefix + '_RCT.csv'))
-        #             message.configure(fg="black")
-        #     else: 
-        #         statusText.set("Please enter a number between 1 and "+str(n))
-        #         message.configure(fg="red")   
-        # except ValueError:
-        #     statusText.set("Please enter a whole number.")
-        #     message.configure(fg="red")
+        
+        if raise_vble_warning and not warned:
+            warning_1()
+            warned = True
+        else:
+            try:
+                sample_size = int(entry.get())
+                n = len(data)
+                if 1 <= sample_size <= n:
+                    prefix = stratify(data_set=data,n=sample_size,selected_columns=strat_columns) 
+                    if prefix is None:
+                        statusText.set("Error creating random sample.")
+                        message.configure(fg="red")
+                    else:
+                        statusText.set("Output is in {}".format(prefix + '_RCT.csv'))
+                        # Consider adding a timestamp.
+                        message.configure(fg="black")
+                else: 
+                    statusText.set("Please enter a number between 1 and "+str(n))
+                    message.configure(fg="red")   
+            except ValueError:
+                statusText.set("Please enter a whole number.")
+                message.configure(fg="red")
 
-    def candidate_vbles(list_columns):
-        """
-        Transform the initial set of columns into valid potential strata.
-        """
-        for col in list_columns:
-            if "DOB" in col:
-                pass
-            if "CCIS" in col:
-                list_columns = list_columns.remove(col)
-            if (col == "PO") or (col=="Judge"):
-                print("Wrong!")
-                #statusText.set("We suggest not to randomize based on parole officers or judges.")
-                #message.configure(fg="red")   
-            if ("name" in col) or ("Name" in col) or ("Surname" in col): #regex are a good thing.
-                list_columns = list_columns.remove(col)
-
-        return list_columns
-
-
-    def stratify(sample_size,strat_columns=['Sex']):
-        """ 
-        Stratified random sampling
-        SPECIAL CASE, WHEN THERE IS ONLY ONE STRATUM PER INDIVIDUAL.
-        RAISE MANY ERRORS.
-        - The test_size = 1 should be greater or equal to the number of classes = 5
-        - 
-        """
-        if data is not None:
-            try:    
-
-                sss = StratifiedShuffleSplit(n_splits=1, test_size=sample_size, random_state=2)
-                #y = np.array(data[~data.isin(data_pre).T.any()][strat_columns])
-                y = np.array(data[strat_columns])
-                X = np.array([0] * y.shape[0])
-
-                for train_index, test_index in sss.split(X, y):
-                    print("TRAIN:", train_index, "TEST:", test_index)
-                    X_train, X_test = X[train_index], X[test_index]
-                    y_train, y_test = y[train_index], y[test_index]
-
-                X = X.astype("string")
-                X[train_index] = "Control"
-                X[test_index] = "Test"
-                data['Trial'] = X
-                (prefix, sep, suffix) = filename.rpartition('.')
-                data.to_csv(prefix + '_RCT.csv')
-
-            except:
-                return None
-
-            return prefix
 
     def first_frame():
 
@@ -163,16 +142,17 @@ def gui():
         Description of this second frame 
         """
 
-        # Destroy previous window and create a new one
+        # Declare variables and set initial values
+        global sample_size, strat_columns, statusText, message, entry, var_dict, strat_columns, frame_B
         frame_A.destroy()
         frame_B = tk.Toplevel(root)
-
-        # Declare variables and set initial values
-        global sample_size, strat_columns, statusText, message, entry, var_dict, strat_columns
         statusText = tk.StringVar(frame_B)
         statusText.set("An empty selection with result in randomizing by Risk, Sex and Race, if possible.")
         strat_columns = []
         var_dict = {}
+
+        # Destroy previous window and create a new one
+        
 
         # Create explanatory label
         label = tk.Label(frame_B, text="Please enter choose a size for the test population that is lower than "+str(len(data)))
@@ -181,10 +161,15 @@ def gui():
         entry.pack()
 
         for col in list(data):
-            var_temp = tk.StringVar()   
-            l = tk.Checkbutton(frame_B, text=col, variable=var_temp)
-            l.pack()  
-            var_dict[col] = var_temp
+            if "CCIS" in col:
+                pass
+            elif ("name" in col) or ("Name" in col) or ("Surname" in col):
+                pass
+            else:
+                var_temp = tk.StringVar()   
+                l = tk.Checkbutton(frame_B, text=col, variable=var_temp)
+                l.pack()  
+                var_dict[col] = var_temp
 
         button_stratify = tk.Button(frame_B,
            text="Generate sample",
@@ -201,12 +186,11 @@ def gui():
         message.configure(fg="black")
         message.pack()
 
+    def warning_1():
+        tkMessageBox.showinfo("Warning","We suggest not to randomize based on parole officers or judges.")
+        frame_B.destroy()
+        second_frame()
+
      
     first_frame()
     tk.mainloop()
-
-
-if __name__ == "__main__":
-    """ Run as a stand-alone script """
-
-    gui() 
