@@ -18,8 +18,8 @@ import datetime as dt
 from beta_functions import *
 
 class gui(tk.Tk):
-    def __init__(self):#,*args,**kwargs):
-        tk.Tk.__init__(self)#, *args, **kwargs)
+    def __init__(self):
+        tk.Tk.__init__(self)
         self.title = "TEST"
         self.container = tk.Frame(self)
         self.container.pack(side="top",fill="both",expand=True)
@@ -81,7 +81,7 @@ class main_frame(tk.Frame):
         message = tk.Label(self, textvariable=statusText)
         message.pack()
 
-    def button_browse_callback(self,entry):#,*args,**kwargs):
+    def button_browse_callback(self,entry):
         """ What to do when the Browse button is pressed """
         #global filename
         global filename
@@ -90,7 +90,7 @@ class main_frame(tk.Frame):
         entry.insert(0, filename)
         return filename
 
-    def button_go_callback(self,entry,statusText,message,controller):#,*args,**kwargs):
+    def button_go_callback(self,entry,statusText,message,controller):
         """ what to do when the "Go" button is pressed """
         global data
         data = None
@@ -99,14 +99,14 @@ class main_frame(tk.Frame):
             statusText.set("Filename must end in `.csv'")
             message.configure(fg="red")
         else:
-            # try:     
-            data = pd.read_csv(filename)
-            controller.show_frame("second_frame",data=data)
-            #sf = second_frame(parent=container,controller=self,data=data)
-            #sf.grid(row=0, column=0, sticky="nsew")
-            #sf.tkraise()
-            # except:
-            #     self.statusText.set("Error reading file" + self.filename)
+            try:     
+                data = pd.read_csv(filename)
+                controller.show_frame("second_frame",data=data)
+                sf = second_frame(parent=container,controller=self,data=data)
+                sf.grid(row=0, column=0, sticky="nsew")
+                sf.tkraise()
+            except:
+                self.statusText.set("Error reading file" + self.filename)
         pass
 
 
@@ -166,6 +166,7 @@ class second_frame(tk.Frame):
         message.pack()
 
     def button_stratify_callback(self,var_dict,entry,statusText,message,warnings=0,*args,**kwargs):
+        
         """ what to do when the "Go" button is pressed """
         global strat_columns, raise_vble_warning
         strat_columns = []
@@ -225,9 +226,8 @@ class second_frame(tk.Frame):
                 message.configure(fg="red")
 
     def warning_1(self,var_dict,entry,statusText,message,warnings):
-        #global warnings, statusText, message
+
         tkMessageBox.showinfo("Warning","We suggest not to randomize based on parole officers or judges.")
-        #warnings = int(warnings)+1
         warnings += 1
         statusText.set("Select columns.")
         message.configure(fg="Black")
@@ -237,9 +237,6 @@ class second_frame(tk.Frame):
 
 if __name__ == "__main__":
 
-    #root = tk.Tk()
-    #root.title("Beta-randomizer.")
-    #root.withdraw()
     my_gui = gui()
     my_gui.mainloop()
     my_gui.title("TEST")
