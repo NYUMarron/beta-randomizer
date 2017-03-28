@@ -31,14 +31,14 @@ class gui(tk.Tk):
 
         self.show_frame("main_frame")
 
-    def show_frame(self,sel_frame,data=[]):
+    def show_frame(self,sel_frame,data=[],filename=None):
 
         for F in (main_frame, second_frame):
             page_name = F.__name__
-            try:
-                frame = F(parent=self.container, controller=self)
-            except:
-                frame = F(parent=self.container, controller=self,data=data)
+            if F==main_frame:
+                frame = F(parent=self.container,controller=self)
+            else:
+                frame = F(parent=self.container,controller=self,data=data,filename=filename)
             self.frames[page_name] = frame
             frame.grid(row=0, column=0, sticky="nsew")
 
@@ -92,8 +92,9 @@ class main_frame(tk.Frame):
 
     def button_go_callback(self,entry,statusText,message,controller):
         """ what to do when the "Go" button is pressed """
-        global data
-        data = None
+        global data, filename
+        #data = None
+        #filename = None
         input_file = entry.get()
         if input_file.rsplit(".")[-1] != "csv":
             statusText.set("Filename must end in `.csv'")
@@ -102,11 +103,11 @@ class main_frame(tk.Frame):
             try:     
                 data = pd.read_csv(filename)
                 controller.show_frame("second_frame",data=data)
-                sf = second_frame(parent=container,controller=self,data=data)
+                sf = second_frame(parent=container,controller=self,data=data,filename=filename)
                 sf.grid(row=0, column=0, sticky="nsew")
                 sf.tkraise()
             except:
-                self.statusText.set("Error reading file" + self.filename)
+                statusText.set("Error reading file" + str(filename))
         pass
 
 
@@ -116,12 +117,13 @@ class second_frame(tk.Frame):
     Description of this second frame 
     """
 
-    def __init__(self,parent,controller,data):
+    def __init__(self,parent,controller,data,filename):
         
         # Declare variables and set initial values'
+
         tk.Frame.__init__(self, parent)
         self.controller = controller
-        warnings=0
+        self.warnings=0
         strat_columns = []
         var_dict = {}
         statusText = tk.StringVar(self)
@@ -132,7 +134,6 @@ class second_frame(tk.Frame):
         label.pack()
         entry = tk.Entry(self, width=50)
         entry.pack()
-
 
         for col in list(data):
             if "CCIS" in col:
@@ -157,6 +158,8 @@ class second_frame(tk.Frame):
                            command=lambda: controller.show_frame("main_frame"))
      
         
+        # IDEA: BUTTON TO CLEAR SELECTION.
+
         button_stratify.pack()
         button_return.pack()
         button_exit.pack()
@@ -165,46 +168,48 @@ class second_frame(tk.Frame):
         message.configure(fg="black")
         message.pack()
 
-    def button_stratify_callback(self,var_dict,entry,statusText,message,warnings=0,*args,**kwargs):
-        
+    def button_stratify_callback(self,var_dict,entry,statusText,message,*args,**kwargs):
+
         """ what to do when the "Go" button is pressed """
         global strat_columns, raise_vble_warning
         strat_columns = []
         raise_vble_warning = False
-        #print(var_dict)
+        #print("At the beginning of callback: "+str(self.warnings))
         for cols,vs in var_dict.iteritems():
             if vs.get():
                 print(cols)
                 if "DOB" in cols:
                     temp_dates = []
                     for dob in data[cols]:
-                        birth_year = int(dt.datetime.strptime(dob,'%d/%M/%y').year)
-                        if birth_year > 2000:
-                            birth_year -= 100
-                        age = dt.datetime.now().year - birth_year
-                        if 0 <= age <= 25:
-                            temp_dates.append('Lower than 25')
-                        elif 25 <= age <= 60:
-                            temp_dates.append('Between 25 and 60')
-                        elif 60 <= age <= 100:
-                            temp_dates.append('Older than 60')
-                        else:
-                            temp_dates.append('')
+                        try:
+                            birth_year = int(dt.datetime.strptime(dob,'%d/%M/%y').year)
+                            if birth_year > 2000:
+                                birth_year -= 100
+                            age = dt.datetime.now().year - birth_year
+                            if 0 <= age <= 25:
+                                temp_dates.append('Lower than 25')
+                            elif 25 <= age <= 60:
+                                temp_dates.append('Between 25 and 60')
+                            elif 60 <= age <= 100:
+                                temp_dates.append('Older than 60')
+                            else:
+                                temp_dates.append('')
+                        except ValueError:
+                            pass
                     del(data[cols])
                     data[cols] = temp_dates
                     strat_columns.append(cols)
                 elif (cols == "PO") or (cols=="Judge"):
                     raise_vble_warning = True
-                    if warnings>=1:    
+                    if self.warnings>0:    
                         strat_columns.append(cols)
                 else:
                     strat_columns.append(cols)
         if strat_columns == []:
             strat_columns = ['Sex','Risk','Race']
-        #print(strat_columns)
         
-        if raise_vble_warning and (warnings<1):
-            self.warning_1(var_dict,entry,statusText,message,warnings)
+        if raise_vble_warning and (self.warnings<1):
+            self.warning_1(var_dict,entry,statusText,message)
         else:
             try:
                 sample_size = int(entry.get())
@@ -225,15 +230,14 @@ class second_frame(tk.Frame):
                 statusText.set("Please enter a whole number.")
                 message.configure(fg="red")
 
-    def warning_1(self,var_dict,entry,statusText,message,warnings):
-
+    def warning_1(self,var_dict,entry,statusText,message):
         tkMessageBox.showinfo("Warning","We suggest not to randomize based on parole officers or judges.")
-        warnings += 1
+        self.warnings += 1
+        print("At prompt function: "+str(self.warnings))
         statusText.set("Select columns.")
         message.configure(fg="Black")
-        self.button_stratify_callback(var_dict=var_dict,entry=entry,statusText=statusText,message=message,warnings=warnings)
+        self.button_stratify_callback(var_dict=var_dict,entry=entry,statusText=statusText,message=message)
     
-
 
 if __name__ == "__main__":
 
