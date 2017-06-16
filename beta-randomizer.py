@@ -96,12 +96,15 @@ class main_frame(tk.Frame):
         #data = None
         #filename = None
         input_file = entry.get()
-        if input_file.rsplit(".")[-1] != "csv":
+        if input_file.rsplit(".")[-1] not in ["csv","xlsx","xls"] :
             statusText.set("Filename must end in `.csv'")
             message.configure(fg="red")
         else:
             try:     
-                data = pd.read_csv(filename)
+                try:
+                    data = pd.read_csv(filename)
+                except:
+                    data = pd.read_excel(filename)
                 controller.show_frame("second_frame",data=data)
                 sf = second_frame(parent=container,controller=self,data=data,filename=filename)
                 sf.grid(row=0, column=0, sticky="nsew")
