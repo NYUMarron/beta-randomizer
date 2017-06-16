@@ -174,6 +174,8 @@ class second_frame(tk.Frame):
     def button_stratify_callback(self,var_dict,entry,statusText,message,*args,**kwargs):
 
         """ what to do when the "Go" button is pressed """
+        return None
+        """
         global strat_columns, raise_vble_warning
         strat_columns = []
         raise_vble_warning = False
@@ -208,30 +210,32 @@ class second_frame(tk.Frame):
                         strat_columns.append(cols)
                 else:
                     strat_columns.append(cols)
-        if strat_columns == []:
-            strat_columns = ['Sex','Risk','Race']
+        #if strat_columns == []:
+        #    strat_columns = ['Sex','Risk','Race']
         
         if raise_vble_warning and (self.warnings<1):
             self.warning_1(var_dict,entry,statusText,message)
         else:
-            try:
-                sample_size = int(entry.get())
-                n = len(data)
-                if 1 <= sample_size <= n:
-                    prefix = stratify(data_set=data,n=sample_size,selected_columns=strat_columns) 
-                    if prefix is None:
-                        statusText.set("Error creating random sample.")
-                        message.configure(fg="red")
-                    else:
-                        statusText.set("Output is in {}".format(prefix+'_RCT.csv'))
-                        # Consider adding a timestamp.
-                        message.configure(fg="black")
-                else: 
-                    statusText.set("Please enter a number between 1 and "+str(n))
-                    message.configure(fg="red")   
-            except ValueError:
-                statusText.set("Please enter a whole number.")
-                message.configure(fg="red")
+            #try:
+            sample_size = int(entry.get())
+            n = len(data)
+            
+            if 1 <= sample_size <= n:
+                prefix = stratify(data_set=data,n=sample_size,selected_columns=strat_columns,filename=filename) 
+                if prefix is None:
+                    statusText.set("Error creating random sample.")
+                    message.configure(fg="red")
+                else:
+                    statusText.set("Output is in file {}".format(prefix))
+                    # Consider adding a timestamp.
+                    message.configure(fg="black")
+            else: 
+                statusText.set("Please enter a number between 1 and "+str(n))
+                message.configure(fg="red")   
+            #except ValueError:
+            #    statusText.set("Please enter a whole number.")
+            #    message.configure(fg="red")
+    """  
 
     def warning_1(self,var_dict,entry,statusText,message):
         tkMessageBox.showinfo("Warning","We suggest not to randomize based on parole officers or judges.")

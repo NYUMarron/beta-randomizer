@@ -32,6 +32,3 @@ for index,comb in df.iterrows():
 	i+=1
 
 data['Group'] = ["Intervention" if x in ind_list else "Control" for x in data.index]
-
-
-
