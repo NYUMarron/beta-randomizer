@@ -144,8 +144,8 @@ class second_frame(tk.Frame):
             elif ("name" in col) or ("Name" in col) or ("Surname" in col):
                 pass
             else:
-                var_temp = tk.StringVar()   
-                l = tk.Checkbutton(self, text=col, variable=var_temp)
+                var_temp = tk.IntVar(value=0)#tk.StringVar()   
+                l = tk.Checkbutton(self, text=col, variable=var_temp)#var_temp) #self.checkbutton = Checkbutton(..., variable = self.CheckVar)
                 l.pack()  
                 var_dict[col] = var_temp
 
@@ -174,8 +174,6 @@ class second_frame(tk.Frame):
     def button_stratify_callback(self,var_dict,entry,statusText,message,*args,**kwargs):
 
         """ what to do when the "Go" button is pressed """
-        return None
-        """
         global strat_columns, raise_vble_warning
         strat_columns = []
         raise_vble_warning = False
@@ -221,6 +219,7 @@ class second_frame(tk.Frame):
             n = len(data)
             
             if 1 <= sample_size <= n:
+                print(data.head())
                 prefix = stratify(data_set=data,n=sample_size,selected_columns=strat_columns,filename=filename) 
                 if prefix is None:
                     statusText.set("Error creating random sample.")
@@ -235,7 +234,6 @@ class second_frame(tk.Frame):
             #except ValueError:
             #    statusText.set("Please enter a whole number.")
             #    message.configure(fg="red")
-    """  
 
     def warning_1(self,var_dict,entry,statusText,message):
         tkMessageBox.showinfo("Warning","We suggest not to randomize based on parole officers or judges.")

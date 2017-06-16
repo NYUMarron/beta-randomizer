@@ -14,11 +14,8 @@ def stratify(data_set,n,selected_columns,filename):
     """
 
     #data = pd.read_csv('Randomization_short.csv') #'NYU - Franklin JIYA to randomizecaseloads.xlsx'
-    return None
-    #data_set.dropna(axis=1,inplace=True)#,how='all')
-    #print(selected_columns)
-    #print(data_set.head())
-    """
+    data_set.dropna(axis=1,inplace=True)#,how='all')
+    
     df = data_set.groupby(selected_columns).count().max(axis=1)
     # Create exception here
     df = df.reset_index()
@@ -31,22 +28,16 @@ def stratify(data_set,n,selected_columns,filename):
     i=0
     ind_list=np.array([])
     for index,comb in df.iterrows():
-        print(comb)
         df_tmp = data_set[(data_set[comb[:-2].index]==comb[:-2].values).all(axis=1)]
         ind_list=np.append(ind_list,df_tmp.sample(n=df['Size'].iloc[i]).index.values)
         i+=1
 
     data_set['Group'] = ["Intervention" if x in ind_list else "Control" for x in data_set.index]
 
-    name=filename+'_RCT'
-    data_set.to_excel(name+'.xlsx')
-
+    name=filename.rsplit(".")[0]+'_RCT'+'.xlsx'
+    data_set.to_excel(name)
     return name
-    """
 
-
-
-        
 
 def parse_column_names(data_set):
     """
