@@ -16,6 +16,8 @@ import Tkinter as tk
 import pandas as pd 
 import datetime as dt
 from beta_functions import *
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
 class gui(tk.Tk):
     def __init__(self):
@@ -33,7 +35,7 @@ class gui(tk.Tk):
 
     def show_frame(self,sel_frame,data=[],filename=None):
 
-        for F in (main_frame, second_frame):
+        for F in (main_frame, second_frame, balance_frame):
             page_name = F.__name__
             if F==main_frame:
                 frame = F(parent=self.container,controller=self)
@@ -157,6 +159,10 @@ class second_frame(tk.Frame):
                      text="Exit",
                      command=tk.sys.exit)
 
+        button_balance = tk.Button(self,
+            text="See resulting balance",
+            command=lambda: self.button_balance_callback(statusText,message))
+
         button_return = tk.Button(self, text="Return",
                            command=lambda: controller.show_frame("main_frame"))
      
@@ -165,6 +171,7 @@ class second_frame(tk.Frame):
 
         button_stratify.pack()
         button_return.pack()
+        button_balance.pack()
         button_exit.pack()
 
         message = tk.Label(self, textvariable=statusText)
@@ -181,7 +188,7 @@ class second_frame(tk.Frame):
         for cols,vs in var_dict.iteritems():
             if vs.get():
                 print(cols)
-                if "DOB" in cols:
+                if "dob" in cols.lower():
                     temp_dates = []
                     for dob in data[cols]:
                         try:
@@ -189,6 +196,7 @@ class second_frame(tk.Frame):
                             if birth_year > 2000:
                                 birth_year -= 100
                             age = dt.datetime.now().year - birth_year
+                            #  CHANGE TO QUANTILES!!!!
                             if 0 <= age <= 25:
                                 temp_dates.append('Lower than 25')
                             elif 25 <= age <= 60:
@@ -235,6 +243,14 @@ class second_frame(tk.Frame):
             #    statusText.set("Please enter a whole number.")
             #    message.configure(fg="red")
 
+    def button_balance_callback(self,statusText,message):
+        try:
+            rct = pd.read_excel(filename.rsplit(".")[0]+'_RCT'+'.xlsx')
+            self.controller.show_frame("balance_frame")
+        except:
+            statusText.set("It is first necessary to create a randomized sample.")
+            message.configure(fg="red")
+
     def warning_1(self,var_dict,entry,statusText,message):
         tkMessageBox.showinfo("Warning","We suggest not to randomize based on parole officers or judges.")
         self.warnings += 1
@@ -244,6 +260,28 @@ class second_frame(tk.Frame):
         self.button_stratify_callback(var_dict=var_dict,entry=entry,statusText=statusText,message=message)
     
 
+class balance_frame(tk.Frame):
+    def __init__(self,parent,controller,data,filename):
+        tk.Frame.__init__(self,parent)
+
+
+        self.controller = controller
+
+        label = tk.Label(self, text="Hello world")
+        label.pack()
+
+        frame = tk.Frame(self)
+
+        fig = Figure()
+        ax = fig.add_subplot(111)
+        self.line, = ax.plot(range(10))
+
+        self.canvas = FigureCanvasTkAgg(fig,master=frame)
+        self.canvas.show()
+        self.canvas.get_tk_widget().pack(side='top', fill='both', expand=1)
+        frame.pack()
+
+        
 if __name__ == "__main__":
 
     my_gui = gui()
