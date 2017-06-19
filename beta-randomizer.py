@@ -33,14 +33,16 @@ class gui(tk.Tk):
 
         self.show_frame("main_frame")
 
-    def show_frame(self,sel_frame,data=[],filename=None):
+    def show_frame(self,sel_frame,data=[],filename=None,rct=pd.DataFrame([])):
 
         for F in (main_frame, second_frame, balance_frame):
             page_name = F.__name__
             if F==main_frame:
                 frame = F(parent=self.container,controller=self)
-            else:
+            if F==second_frame:
                 frame = F(parent=self.container,controller=self,data=data,filename=filename)
+            if F==balance_frame:
+                frame = F(parent=self.container,controller=self,data=data,filename=filename,rct=rct)
             self.frames[page_name] = frame
             frame.grid(row=0, column=0, sticky="nsew")
 
@@ -196,24 +198,18 @@ class second_frame(tk.Frame):
                             if birth_year > 2000:
                                 birth_year -= 100
                             age = dt.datetime.now().year - birth_year
-                            #  CHANGE TO QUANTILES!!!!
-                            if 0 <= age <= 25:
-                                temp_dates.append('Lower than 25')
-                            elif 25 <= age <= 60:
-                                temp_dates.append('Between 25 and 60')
-                            elif 60 <= age <= 100:
-                                temp_dates.append('Older than 60')
-                            else:
-                                temp_dates.append('')
                         except ValueError:
                             pass
                     del(data[cols])
-                    data[cols] = temp_dates
+                    data["Age"] = age
                     strat_columns.append(cols)
                 elif (cols == "PO") or (cols=="Judge"):
                     raise_vble_warning = True
                     if self.warnings>0:    
                         strat_columns.append(cols)
+                elif ('age' in cols.lower()):
+                    data[cols].astype('int64').quantile([0.,0.25,0.5,0.75])
+                    age_bins = {#PLACE HOLDER IN THIS FUNCTION}
                 else:
                     strat_columns.append(cols)
         #if strat_columns == []:
@@ -243,10 +239,13 @@ class second_frame(tk.Frame):
             #    statusText.set("Please enter a whole number.")
             #    message.configure(fg="red")
 
-    def button_balance_callback(self,statusText,message):
+    def button_balance_callback(self,statusText,message,*args,**kwargs):
+        global rct
         try:
+            print("filename")
+            print(filename)
             rct = pd.read_excel(filename.rsplit(".")[0]+'_RCT'+'.xlsx')
-            self.controller.show_frame("balance_frame")
+            self.controller.show_frame("balance_frame",rct=rct)
         except:
             statusText.set("It is first necessary to create a randomized sample.")
             message.configure(fg="red")
@@ -261,26 +260,68 @@ class second_frame(tk.Frame):
     
 
 class balance_frame(tk.Frame):
-    def __init__(self,parent,controller,data,filename):
+    def __init__(self,parent,controller,data,filename,rct,*args,**kwargs):
         tk.Frame.__init__(self,parent)
-
-
         self.controller = controller
-
         label = tk.Label(self, text="Hello world")
         label.pack()
 
-        frame = tk.Frame(self)
+        button_exit = tk.Button(self,
+             text="Exit",
+             command=tk.sys.exit)
 
-        fig = Figure()
-        ax = fig.add_subplot(111)
-        self.line, = ax.plot(range(10))
+        button_return = tk.Button(self, text="Return to main window",
+                           command=lambda: controller.show_frame("main_frame"))
+     
+        
 
-        self.canvas = FigureCanvasTkAgg(fig,master=frame)
-        self.canvas.show()
-        self.canvas.get_tk_widget().pack(side='top', fill='both', expand=1)
-        frame.pack()
+        try:
+            #rct['Group-RCT'].hist()
+            print('yes')
+            print(rct[strat_columns[0]])
 
+            
+            f = Figure(figsize=(5,5), dpi=100)
+            a = f.add_subplot('111')
+            #a.plot([1,2,3,4,5,6,7,8],[5,6,1,3,8,9,3,5])
+            df = pd.crosstab(rct['Group-RCT'],rct[strat_columns[0]])
+            print(df)
+            
+            ind = np.arange(len(df.transpose()))
+            a.bar(ind,df.values[0][:],0.25)
+            a.bar(ind+0.5,df.values[1][:],0.25)
+            #a.title(strat_columns[0])
+            #a.plot(rct[strat_columns[0]].value_counts(),kind='bar')
+
+            canvas = FigureCanvasTkAgg(f, self)
+            canvas.show()
+            canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+
+            toolbar = NavigationToolbar2TkAgg(canvas, self)
+            toolbar.update()
+            canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+
+            
+            """
+            f = Figure(figsize=(5,5), dpi=100)
+            a = f.add_subplot(111)
+            a.plot([1,2,3,4,5,6,7,8],[5,6,1,3,8,9,3,5])
+
+            
+
+            canvas = FigureCanvasTkAgg(f, self)
+            canvas.show()
+            canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+
+            """
+
+        except:
+            pass
+
+        button_return.pack()
+        button_exit.pack()
+        
         
 if __name__ == "__main__":
 
