@@ -16,6 +16,7 @@ def stratify(data_set,n,selected_columns,filename):
     #data = pd.read_csv('Randomization_short.csv') #'NYU - Franklin JIYA to randomizecaseloads.xlsx'
     data_set.dropna(axis=1,inplace=True)#,how='all')
     data_set = data_set.apply(lambda x: x.astype(str).str.lower())
+    print(selected_columns)
     df = data_set.groupby(selected_columns).count().max(axis=1)
     # Create exception here
     df = df.reset_index()
