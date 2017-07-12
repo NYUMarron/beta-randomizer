@@ -11,8 +11,9 @@ Some of A. Caird's code (https://acaird.github.io/2016/02/07/simple-python-gui) 
 
 """
 
-import tkFileDialog, tkMessageBox
 import Tkinter as tk
+import tkFileDialog
+import tkMessageBox
 import pandas as pd 
 import datetime as dt
 from beta_functions import *
