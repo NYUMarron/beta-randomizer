@@ -19,16 +19,18 @@ import datetime as dt
 from beta_functions import *
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+from Tkinter import BooleanVar
+from Tkinter import StringVar
 
-global data
+global data, strat_columns, filename, filename1, filename2, rct
 data = pd.DataFrame([])
+strat_columns = []
 
 class gui(tk.Tk):
 
     data = pd.DataFrame([])
     filename = ""
-    strat_columns = []
-    raise_vble_warning = False
+
     rct = []
     def __init__(self):
         tk.Tk.__init__(self)
@@ -102,7 +104,8 @@ class first_frame(tk.Frame):
         self.controller = controller
         self.parent = parent
 
-        
+        self.raise_vble_warning = BooleanVar(self)
+        self.raise_vble_warning.set(False)
 
         statusText = tk.StringVar(self)
         statusText.set("Press Browse button or enter CSV filename, "
@@ -134,28 +137,18 @@ class first_frame(tk.Frame):
         message = tk.Label(self, textvariable=statusText)
         message.pack()
 
-    """
-    @property
-    def data(self):
-        return self.data
-
-    @data.setter
-    def data(self, value):
-        self.data = new_data
-    """
     def button_browse_callback(self,entry):
         """ What to do when the Browse button is pressed """
-        self.filename = tkFileDialog.askopenfilename()
-        gui.filename = self.filename
+        global filename
+        filename = tkFileDialog.askopenfilename()
         #self.controller.filename.set(self.filename)
 
         entry.delete(0, tk.END)
-        entry.insert(0, self.filename)
+        entry.insert(0, filename)
 
     def button_go_callback(self,entry,statusText,message):
         global data
         """ what to do when the "Go" button is pressed """
-        self.filename = gui.filename
         input_file = entry.get()
         if input_file.rsplit(".")[-1] not in ["csv","xlsx","xls"] :
             statusText.set("Filename must end in `.csv'")
@@ -165,7 +158,7 @@ class first_frame(tk.Frame):
                 #try:
                     #data = pd.read_csv(filename)
                 #except:
-            data = pd.read_excel(self.filename)
+            data = pd.read_excel(filename)
             # delete empty columns
             data.dropna(axis=1,inplace=True)
             # remove upper case.
@@ -177,8 +170,6 @@ class first_frame(tk.Frame):
             sf = second_frame(self.parent, self)
             sf.grid(row=0, column=0, sticky="nsew")
             sf.tkraise()
-            print(data.head())
-
             #self.__firstFrame=first_frame(self,self.parent)
             #self.__firstFrame.data = data
 
@@ -206,9 +197,6 @@ class second_frame(tk.Frame):
         #data = first_frame.data
         #data = pd.DataFrame([])
 
-        print ("Data second frame")
-        print(data)
-        strat_columns = []
         var_dict = {}
         statusText = tk.StringVar(self)
         statusText.set(" ")
@@ -259,7 +247,7 @@ class second_frame(tk.Frame):
 
 
     def button_stratify_callback(self,var_dict,entry,statusText,message,*args,**kwargs):
-
+        global strat_columns
         """ what to do when the "Go" button is pressed """
         #print("At the beginning of callback: "+str(self.warnings))
         for cols,vs in var_dict.iteritems():
@@ -293,12 +281,10 @@ class second_frame(tk.Frame):
                     #{str()}#PLACE HOLDER IN THIS FUNCTION}
                 else:
                     strat_columns.append(cols)
-        self.controller.strat_columns.clear()
-        self.controller.strat_columns.update(strat_columns)
         #if strat_columns == []:
         #    strat_columns = ['Sex','Risk','Race']
         
-        if controller.shared_data["raise_vble_warning"] and (self.warnings<1):
+        if self.controller.raise_vble_warning.get() and (self.warnings<1):
             self.warning_1(var_dict,entry,statusText,message)
         else:
             #try:
@@ -332,6 +318,7 @@ class second_frame(tk.Frame):
         global rct
         try:
             rct = pd.read_excel(filename.rsplit(".")[0]+'_RCT'+'.xlsx')
+            print(rct)
             self.controller.show_frame(balance_frame,rct=rct)
         except:
             statusText.set("It is first necessary to create a randomized sample.")
