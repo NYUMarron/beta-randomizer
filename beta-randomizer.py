@@ -20,7 +20,11 @@ from beta_functions import *
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
+global data
+data = pd.DataFrame([])
+
 class gui(tk.Tk):
+
     data = pd.DataFrame([])
     filename = ""
     strat_columns = []
@@ -36,9 +40,6 @@ class gui(tk.Tk):
 
         self.frames = {}
 
-        
-
-        
         for F in (main_frame, first_frame, second_frame, balance_frame, first_frame_existing, second_frame_existing):
             frame = F(container, self)
             self.frames[F] = frame
@@ -53,12 +54,11 @@ class gui(tk.Tk):
     def get_page(self, page_class):
         return self.frames[page_class]
 
-    def update_filename(value):
-        gui.filename = value
 
 class main_frame(tk.Frame):
 
     def __init__(self,parent,controller):
+        print("Main frame initialized")
         tk.Frame.__init__(self,parent)
         self.parent = parent 
         self.controller = controller
@@ -94,10 +94,15 @@ class main_frame(tk.Frame):
 
 class first_frame(tk.Frame):
 
+    
+
     def __init__(self,parent,controller):
+        print("First frame initialized")
         tk.Frame.__init__(self,parent)
         self.controller = controller
         self.parent = parent
+
+        
 
         statusText = tk.StringVar(self)
         statusText.set("Press Browse button or enter CSV filename, "
@@ -129,16 +134,26 @@ class first_frame(tk.Frame):
         message = tk.Label(self, textvariable=statusText)
         message.pack()
 
+    """
+    @property
+    def data(self):
+        return self.data
+
+    @data.setter
+    def data(self, value):
+        self.data = new_data
+    """
     def button_browse_callback(self,entry):
         """ What to do when the Browse button is pressed """
         self.filename = tkFileDialog.askopenfilename()
+        gui.filename = self.filename
         #self.controller.filename.set(self.filename)
 
-        gui.update(gui(), self.filename)
         entry.delete(0, tk.END)
         entry.insert(0, self.filename)
 
     def button_go_callback(self,entry,statusText,message):
+        global data
         """ what to do when the "Go" button is pressed """
         self.filename = gui.filename
         input_file = entry.get()
@@ -150,18 +165,23 @@ class first_frame(tk.Frame):
                 #try:
                     #data = pd.read_csv(filename)
                 #except:
-            self.data = pd.read_excel(self.filename)
+            data = pd.read_excel(self.filename)
             # delete empty columns
-            self.data.dropna(axis=1,inplace=True)
+            data.dropna(axis=1,inplace=True)
             # remove upper case.
-            self.data = self.data.apply(lambda x: x.astype(str).str.lower())
+            data = data.apply(lambda x: x.astype(str).str.lower())
             # replace all special characters.
-            self.data.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True)
-
-            #self.controller.data.clear() 
-            gui.data = self.data
+            data.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True)
 
             self.controller.show_frame(second_frame)
+            sf = second_frame(self.parent, self)
+            sf.grid(row=0, column=0, sticky="nsew")
+            sf.tkraise()
+            print(data.head())
+
+            #self.__firstFrame=first_frame(self,self.parent)
+            #self.__firstFrame.data = data
+
             #except:
             #    statusText.set("Error reading file" + str(filename))
         pass
@@ -172,23 +192,26 @@ class second_frame(tk.Frame):
     """ 
     Description of this second frame 
     """
-
+    
     def __init__(self,parent,controller):
-        
         # Declare variables and set initial values'
-
+        print("Second frame initialized")
         tk.Frame.__init__(self, parent)
         self.controller = controller
         self.parent = parent
         self.warnings=0
-        data = gui.data
+
+        #self.__firstFrame=first_frame(self,parent)
+        #print(self.__firstFrame.data)
+        #data = first_frame.data
+        #data = pd.DataFrame([])
 
         print ("Data second frame")
         print(data)
         strat_columns = []
         var_dict = {}
         statusText = tk.StringVar(self)
-        statusText.set("An empty selection with result in randomizing by Risk, Sex and Race, if possible.")
+        statusText.set(" ")
 
         # Create explanatory label
         label = tk.Label(self, text="Please enter a number for the size of the test population that is lower than "+str(len(data)))
@@ -232,6 +255,8 @@ class second_frame(tk.Frame):
         message = tk.Label(self, textvariable=statusText)
         message.configure(fg="black")
         message.pack()
+
+
 
     def button_stratify_callback(self,var_dict,entry,statusText,message,*args,**kwargs):
 
@@ -414,6 +439,8 @@ class first_frame_existing(tk.Frame):
         self.controller = controller
         self.parent = parent
 
+        """
+
         statusText = tk.StringVar(self)
         statusText.set("Press Browse button or enter CSV filename, "
                         "It must end in _RCT"
@@ -514,6 +541,7 @@ class first_frame_existing(tk.Frame):
                 
                 pass
         pass
+        """
       
 
 class second_frame_existing(tk.Frame):
@@ -530,7 +558,7 @@ class second_frame_existing(tk.Frame):
         self.controller = controller
         self.parent = parent
         self.warnings=0
-    
+    """
         data = controller.data
         strat_columns = []
         var_dict = {}
@@ -659,7 +687,7 @@ class second_frame_existing(tk.Frame):
         message.configure(fg="Black")
         self.button_stratify_callback(var_dict=var_dict,entry=entry,statusText=statusText,message=message)
     
-
+    """
 
 
 if __name__ == "__main__":
