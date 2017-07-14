@@ -36,7 +36,7 @@ def stratify(data_set,p,selected_columns,filename):
         ind_list=np.append(ind_list,df_tmp.sample(n=df['Size'].iloc[i]).index.values)
         i+=1
 
-    data_set['Group-RCT'] = ["Intervention" if x in ind_list else "Control" for x in data_set.index]
+    data_set['Group-RCT'] = ["intervention" if x in ind_list else "control" for x in data_set.index]
 
     name=filename.rsplit(".")[0]+","+",".join(selected_columns)+'-'+str(p)+'_RCT'+'.xlsx'
     data_set.to_excel(name)
@@ -105,7 +105,7 @@ def update_stratification(data_rct,data_new,sample_p,selected_columns,filename1)
         else:
             pass
         i+=1
-    data_new['Group-RCT'] = ["Intervention" if x in ind_list else "Control" for x in data_new.index]
+    data_new['Group-RCT'] = ["intervention" if x in ind_list else "control" for x in data_new.index]
 
 
     name=filename1.rsplit(".")[0]+'.xlsx'

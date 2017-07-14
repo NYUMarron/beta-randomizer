@@ -383,11 +383,22 @@ class balance_frame(tk.Frame):
         i = 0
         if len(strat_columns)>0:
             fig, axes = plt.subplots(len(strat_columns), 1)
-            for row in axes:
+            if hasattr(axes, '__iter__'):
+                for row in axes:
+                    df = (100*(pd.crosstab(rct['Group-RCT'],rct[strat_columns[i]],normalize='columns')))
+                    df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
+                    ax_curr = axes[i]
+                    sns.barplot(hue=df['Group-RCT'],y = df['Percentage'],x=df[strat_columns[i]],ax=ax_curr)
+                    plt.ylim([0,100])
+                    plt.tight_layout()
+                    i+=1
+            else:
                 df = (100*(pd.crosstab(rct['Group-RCT'],rct[strat_columns[i]],normalize='columns')))
                 df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
-                ax_curr = axes[i, 0]
+                ax_curr = axes
                 sns.barplot(hue=df['Group-RCT'],y = df['Percentage'],x=df[strat_columns[i]],ax=ax_curr)
+                plt.ylim([0,100])
+                plt.tight_layout()
                 i+=1
 
 
@@ -627,16 +638,31 @@ class second_frame_existing(tk.Frame):
         message.configure(fg="black")
         message.pack()
 
+
+        statusText_up = tk.StringVar(self)
+        statusText_up.set(" ")
+
+        message_up = tk.Label(self, textvariable=statusText_up)
+
+        message_up.pack()
+
         sample_p = filename1.rsplit("-")[-1].rsplit("_")[0]
         #print("filename")
         #print(filename1)
 
-        button_stratify = tk.Button(self,text="Randomize new individuals",command=lambda: self.button_stratify_callback(data_rct,data_new,sample_p,strat_columns,filename1))
+        button_stratify = tk.Button(self,text="Randomize new individuals",command=lambda: self.button_stratify_callback(data_rct,data_new,sample_p,strat_columns,filename1,statusText_up,message_up))
         button_stratify.pack()
-    def button_stratify_callback(self,data_rct,data_new,sample_p,strat_columns,filename1,*args,**kwargs):
+
+    def button_stratify_callback(self,data_rct,data_new,sample_p,strat_columns,filename1,statusText,message,*args,**kwargs):
         prefix = update_stratification(data_rct=data_rct,data_new=data_new,sample_p=sample_p,selected_columns=strat_columns,filename1=filename1) 
 
-
+        if prefix is None:
+            statusText.set("Error updating sample.")
+            message.configure(fg="red")
+        else:
+            statusText.set("Output is in file {}".format(prefix))
+            # Consider adding a timestamp.
+            message.configure(fg="black")
 
         #statusText.set("Please enter a number between "+str(min_n)+" and "+str(n))
         #message.configure(fg="red")   
