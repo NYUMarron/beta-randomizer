@@ -17,7 +17,7 @@ import tkMessageBox
 import pandas as pd 
 import datetime as dt
 from beta_functions import *
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
 from Tkinter import BooleanVar
 from Tkinter import StringVar
@@ -99,8 +99,6 @@ class main_frame(tk.Frame):
 
 
 class first_frame(tk.Frame):
-
-    
 
     def __init__(self,parent,controller):
         #print("First frame initialized")
@@ -325,7 +323,8 @@ class second_frame(tk.Frame):
     def button_balance_callback(self,statusText,message,*args,**kwargs):
         global rct
         #try:
-        rct = pd.read_excel(filename.rsplit(".")[0]+'_RCT'+'.xlsx')
+        #rct = pd.read_excel(filename.rsplit(".")[0]+'_RCT'+'.xlsx')
+        rct = pd.read_excel(filename.rsplit(".")[0]+","+",".join(strat_columns)+'-'+str(sample_p)+'_RCT'+'.xlsx')
         #print(rct)
         #self.controller.show_frame(balance_frame,rct=rct)
 
@@ -368,16 +367,19 @@ class balance_frame(tk.Frame):
      
         #print(rct)
 
-        try:
+        #try:
             #rct['Group-RCT'].hist()
             #print('yes')
             #print(rct[strat_columns[0]])
 
+        f = Figure(figsize=(5,5), dpi=100)
+
+        for idx, vble in enumerate(strat_columns):
+            print("hello")
             
-            f = Figure(figsize=(5,5), dpi=100)
-            a = f.add_subplot('111')
+            a = f.add_subplot('11'+str(idx+1))
             #a.plot([1,2,3,4,5,6,7,8],[5,6,1,3,8,9,3,5])
-            df = pd.crosstab(rct['Group-RCT'],rct[strat_columns[0]],normalize='columns')
+            df = pd.crosstab(rct['Group-RCT'],rct[vble],normalize='columns')
             #print(df)
             
             ind = np.arange(len(df.transpose()))
@@ -395,26 +397,8 @@ class balance_frame(tk.Frame):
             canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
 
-
-            b = f.add_subplot('112')
-            #a.plot([1,2,3,4,5,6,7,8],[5,6,1,3,8,9,3,5])
-            df = pd.crosstab(rct['Group-RCT'],rct[strat_columns[0]],normalize='columns')
-            print(df)
-            
-            ind = np.arange(len(df.transpose()))
-            b.bar(ind,df.values[0][:],0.25)
-            b.bar(ind+0.5,df.values[1][:],0.25)
-            #a.title(strat_columns[0])
-            #a.plot(rct[strat_columns[0]].value_counts(),kind='bar')
-
-            canvas = FigureCanvasTkAgg(f, self)
-            canvas.show()
-            canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-
-            toolbar = NavigationToolbar2TkAgg(canvas, self)
-            toolbar.update()
-            canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-            
+                
+                
             """
             f = Figure(figsize=(5,5), dpi=100)
             a = f.add_subplot(111)
@@ -426,8 +410,8 @@ class balance_frame(tk.Frame):
 
             """
 
-        except:
-            pass
+        #except:
+            #pass
 
         button_return.pack()
         button_exit.pack()
