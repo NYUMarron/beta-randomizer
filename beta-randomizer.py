@@ -382,13 +382,14 @@ class balance_frame(tk.Frame):
 
         i = 0
         if len(strat_columns)>0:
-            fig, axes = plt.subplots(len(strat_columns), 2)
+            fig, axes = plt.subplots(len(strat_columns), 1)
             for row in axes:
                 df = (100*(pd.crosstab(rct['Group-RCT'],rct[strat_columns[i]],normalize='columns')))
-                ax_curr = axes[i, 1]
-                sns.barplot(df,ax=ax_curr)
+                df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
+                ax_curr = axes[i, 0]
+                sns.barplot(hue=df['Group-RCT'],y = df['Percentage'],x=df[strat_columns[i]],ax=ax_curr)
                 i+=1
-        
+
 
             canvas = FigureCanvasTkAgg(fig, self)
             canvas.show()
