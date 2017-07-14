@@ -3,7 +3,7 @@
 import pandas as pd
 import numpy as np
 
-def stratify(data_set,n,selected_columns,filename):
+def stratify(data_set,p,selected_columns,filename):
     """ 
     Stratified random sampling
     SPECIAL CASE, WHEN THERE IS ONLY ONE STRATUM PER INDIVIDUAL.
@@ -21,6 +21,8 @@ def stratify(data_set,n,selected_columns,filename):
     # Create exception here
     df = df.reset_index()
     df[df.columns[-1]]
+
+    n = np.ceil(p*len(data_set))
 
     # How to ensure sample size when rounding like this.
     df['Size'] = np.ceil(n*(df[df.columns[-1]]/len(data_set)).values)
@@ -40,7 +42,7 @@ def stratify(data_set,n,selected_columns,filename):
     return name
 
 
-    def update_stratification(data_set,p,selected_columns,filename,new_filename):
+def update_stratification(data_set,p,selected_columns,filename,new_filename):
     """ 
     Stratified random sampling
     SPECIAL CASE, WHEN THERE IS ONLY ONE STRATUM PER INDIVIDUAL.
@@ -65,7 +67,7 @@ def stratify(data_set,n,selected_columns,filename):
     print(selected_columns)
     df = data_temp.groupby(selected_columns).count().max(axis=1).reset_index()
     control_pre = pd.crosstab(data_set['Group-RCT'],[pd.Series(data_set[cols]) for cols in selected_columns]).loc['control'].reset_index()
-    n = p*len(data_temp)
+    n = np.ceil(p*len(data_temp))
     df['Size'] = np.ceil(n*(df[df.columns[-1]]/len(data_temp)).values)
     df = df.merge(control_pre)
     df['Missing'] = df['Size'] - df.control
@@ -85,4 +87,4 @@ def stratify(data_set,n,selected_columns,filename):
 
     name=filename.rsplit(".")[0]+'_RCT'+'.xlsx'
     data_new.append(data_set).to_excel(name)
-        return name
+    return name

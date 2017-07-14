@@ -22,9 +22,11 @@ from matplotlib.figure import Figure
 from Tkinter import BooleanVar
 from Tkinter import StringVar
 
-global data, strat_columns, filename, filename1, filename2, rct
+global data, strat_columns, filename, filename1, filename2, rct, data_rct, data_new
 data = pd.DataFrame([])
+rct = pd.DataFrame([])
 strat_columns = []
+filename1, filename2, filename = "","",""
 
 class gui(tk.Tk):
 
@@ -107,6 +109,8 @@ class first_frame(tk.Frame):
         self.raise_vble_warning = BooleanVar(self)
         self.raise_vble_warning.set(False)
 
+        self.show_frame = controller.show_frame
+
         statusText = tk.StringVar(self)
         statusText.set("Press Browse button or enter CSV filename, "
                         "then press the Go button")
@@ -166,7 +170,7 @@ class first_frame(tk.Frame):
             # replace all special characters.
             data.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True)
 
-            self.controller.show_frame(second_frame)
+            #self.controller.show_frame(second_frame)
             sf = second_frame(self.parent, self)
             sf.grid(row=0, column=0, sticky="nsew")
             sf.tkraise()
@@ -191,6 +195,8 @@ class second_frame(tk.Frame):
         self.controller = controller
         self.parent = parent
         self.warnings=0
+
+        self.show_frame = controller.show_frame
 
         #self.__firstFrame=first_frame(self,parent)
         #print(self.__firstFrame.data)
@@ -309,20 +315,30 @@ class second_frame(tk.Frame):
                     message.configure(fg="black")
             else: 
                 statusText.set("Please enter a number between "+str(min_n)+" and "+str(n))
-                message.configure(fg="red")   
+                message.configure(fg="red")
             #except ValueError:
             #    statusText.set("Please enter a whole number.")
             #    message.configure(fg="red")
 
     def button_balance_callback(self,statusText,message,*args,**kwargs):
         global rct
-        try:
-            rct = pd.read_excel(filename.rsplit(".")[0]+'_RCT'+'.xlsx')
-            print(rct)
-            self.controller.show_frame(balance_frame,rct=rct)
-        except:
-            statusText.set("It is first necessary to create a randomized sample.")
-            message.configure(fg="red")
+        #try:
+        rct = pd.read_excel(filename.rsplit(".")[0]+'_RCT'+'.xlsx')
+        #print(rct)
+        #self.controller.show_frame(balance_frame,rct=rct)
+
+        #sf = balance_frame(self.parent, self)
+        #sf.grid(row=0, column=0, sticky="nsew")
+        #sf.tkraise()
+
+        #self.controller.show_frame(balance_frame)
+
+        sf = balance_frame(self.parent, self)
+        sf.grid(row=0, column=0, sticky="nsew")
+        sf.tkraise()
+        #except:
+        #    statusText.set("It is first necessary to create a randomized sample.")
+        #    message.configure(fg="red")
 
     def warning_1(self,var_dict,entry,statusText,message):
         tkMessageBox.showinfo("Warning","We suggest not to randomize based on parole officers or judges.")
@@ -348,7 +364,7 @@ class balance_frame(tk.Frame):
         button_return = tk.Button(self, text="Return to main window",
                            command=lambda: controller.show_frame(main_frame))
      
-        
+        print(rct)
 
         try:
             #rct['Group-RCT'].hist()
@@ -396,15 +412,11 @@ class balance_frame(tk.Frame):
             toolbar = NavigationToolbar2TkAgg(canvas, self)
             toolbar.update()
             canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
-
             
             """
             f = Figure(figsize=(5,5), dpi=100)
             a = f.add_subplot(111)
             a.plot([1,2,3,4,5,6,7,8],[5,6,1,3,8,9,3,5])
-
-            
 
             canvas = FigureCanvasTkAgg(f, self)
             canvas.show()
@@ -426,7 +438,7 @@ class first_frame_existing(tk.Frame):
         self.controller = controller
         self.parent = parent
 
-        """
+        self.show_frame = controller.show_frame
 
         statusText = tk.StringVar(self)
         statusText.set("Press Browse button or enter CSV filename, "
@@ -458,7 +470,7 @@ class first_frame_existing(tk.Frame):
 
         button_browse_2 = tk.Button(self,
                                text="Browse",
-                               command=lambda: self.button_browse_callback_1(entry2))
+                               command=lambda: self.button_browse_callback_2(entry2))
 
         button_exit = tk.Button(self,
                              text="Exit",
@@ -491,7 +503,7 @@ class first_frame_existing(tk.Frame):
         return filename2
 
     def button_go_callback(self,entry1,entry2,statusText,message,controller):
-        global data, filename1,filename2
+        global data_new, data_rct
         #data = None
         #filename = None
         input_file_1 = entry1.get()
@@ -512,23 +524,44 @@ class first_frame_existing(tk.Frame):
                 message.configure(fg="red")
             else:  
                 
-                data = pd.read_excel(filename)
+                data_rct = pd.read_excel(filename1)
                 # delete empty columns
-                data.dropna(axis=1,inplace=True)
+                data_rct.dropna(axis=1,inplace=True)
                 # remove upper case.
-                data = data.apply(lambda x: x.astype(str).str.lower())
+                data_rct = data_rct.apply(lambda x: x.astype(str).str.lower())
                 # replace all special characters.
-                data.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True)
+                data_rct.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True)
 
 
-                controller.show_frame("second_frame_existing",data=data)
-                sf = second_frame_existing(parent=container,controller=self,data=data,filename=filename)
-                sf.grid(row=0, column=0, sticky="nsew")
-                sf.tkraise()
+
+                data_new = pd.read_excel(filename2)
+                # delete empty columns
+                data_new.dropna(axis=1,inplace=True)
+                # remove upper case.
+                data_new = data_new.apply(lambda x: x.astype(str).str.lower())
+                # replace all special characters.
+                data_new.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True)
+
+                print(set(data_rct.columns)-set(['Group-RCT']))
+                print(set(data_new.columns))
+                print(set(data_rct.columns)-set(['Group-RCT']) ==  set(data_new.columns))
+
+                if 'Group-RCT' in data_rct.columns:
+                    #controller.show_frame("second_frame_existing")
+                    if set(data_rct.columns)-set(['Group-RCT']) ==  set(data_new.columns):
+                        sf = second_frame_existing(self.parent, self)
+                        sf.grid(row=0, column=0, sticky="nsew")
+                        sf.tkraise()
+                    else:
+                        statusText.set("Files must have the same structure (columns).")
+                        message.configure(fg="red")
+                else:                    
+                    statusText.set("The file should have been generated by this own program and thus have a Group-RCT column.")
+                    message.configure(fg="red")
                 
                 pass
         pass
-        """
+        
       
 
 class second_frame_existing(tk.Frame):
@@ -545,23 +578,16 @@ class second_frame_existing(tk.Frame):
         self.controller = controller
         self.parent = parent
         self.warnings=0
-    """
-        data = controller.data
+    
+
         strat_columns = []
         var_dict = {}
         statusText = tk.StringVar(self)
-        statusText.set("An empty selection with result in randomizing by Risk, Sex and Race, if possible.")
-
-        # Create explanatory label
-        label = tk.Label(self, text="Please enter a number for the size of the test population that is lower than "+str(len(data)))
-        label.pack()
-        entry = tk.Entry(self, width=50)
-        entry.pack()
-
+        statusText.set(" ")
 
 
         button_stratify = tk.Button(self,
-           text="Generate sample",
+           text="Randomize new individuals",
            command=lambda: self.button_stratify_callback(var_dict,entry,statusText,message))
 
         button_exit = tk.Button(self,
@@ -569,7 +595,7 @@ class second_frame_existing(tk.Frame):
                      command=tk.sys.exit)
 
         button_balance = tk.Button(self,
-            text="See resulting balance",
+            text="See existing balance",
             command=lambda: self.button_balance_callback(statusText,message))
 
         button_return = tk.Button(self, text="Return",
@@ -588,74 +614,9 @@ class second_frame_existing(tk.Frame):
         message.pack()
 
     def button_stratify_callback(self,var_dict,entry,statusText,message,*args,**kwargs):
-
-
-        global strat_columns, raise_vble_warning
-        strat_columns = []
-        raise_vble_warning = False
-        #print("At the beginning of callback: "+str(self.warnings))
-        for cols,vs in var_dict.iteritems():
-            if vs.get():
-                if "dob" in cols.lower():
-                    temp_dates = []
-                    for dob in data[cols]:
-                        try:
-                            birth_year = int(dt.datetime.strptime(dob,'%d/%M/%y').year)
-                            if birth_year > 2000:
-                                birth_year -= 100
-                            age = dt.datetime.now().year - birth_year
-                        except ValueError:
-                            pass
-                    del(data[cols])
-                    data["Age"] = age
-                    strat_columns.append(cols)
-                elif (cols == "PO") or (cols=="Judge"):
-                    raise_vble_warning = True
-                    if self.warnings>0:    
-                        strat_columns.append(cols)
-                elif ('age' in cols.lower()):
-                    qtile = data[cols].astype('int64').quantile([0.,0.25,0.5,0.75]).values.astype('int')
-                    data[cols] = data[cols].astype('int64')
-                    data.loc[data[cols] > qtile[len(qtile)-1], cols] = '['+str(qtile[len(qtile)-1])+'-'+str(data[cols].max())+']'
-                    for i in range(len(qtile)-1):
-                        data.loc[(data[cols]>=qtile[i]) & (data[cols]<qtile[i+1]),cols] = '['+str(qtile[i])+'-'+str(qtile[i+1])+')'
-                    strat_columns.append(cols)
-
-                    #{str()}#PLACE HOLDER IN THIS FUNCTION}
-                else:
-                    strat_columns.append(cols)
-        #if strat_columns == []:
-        #    strat_columns = ['Sex','Risk','Race']
-        
-        if raise_vble_warning and (self.warnings<1):
-            self.warning_1(var_dict,entry,statusText,message)
-        else:
-            #try:
-            sample_size = int(entry.get())
-            n = len(data)
-
-            min_n = len(strat_columns)*2
-
-            if min_n >= n:
-                statusText.set("Too many columns selected for the sample size. Try selecting less columns for stratification.")
-                message.configure(fg="red")
-            
-            if min_n <= sample_size <= n:
-                print(data.head())
-                prefix = stratify(data_set=data,n=sample_size,selected_columns=strat_columns,filename=filename) 
-                if prefix is None:
-                    statusText.set("Error creating random sample.")
-                    message.configure(fg="red")
-                else:
-                    statusText.set("Output is in file {}".format(prefix))
-                    # Consider adding a timestamp.
-                    message.configure(fg="black")
-            else: 
-                statusText.set("Please enter a number between "+str(min_n)+" and "+str(n))
-                message.configure(fg="red")   
-            #except ValueError:
-            #    statusText.set("Please enter a whole number.")
-            #    message.configure(fg="red")
+        prefix = update_stratification(data_set=data,p=sample_p,selected_columns=strat_columns,filename=filename1,new_filename=filename2) 
+        #statusText.set("Please enter a number between "+str(min_n)+" and "+str(n))
+        #message.configure(fg="red")   
 
     def button_balance_callback(self,statusText,message,*args,**kwargs):
         try:
@@ -673,8 +634,6 @@ class second_frame_existing(tk.Frame):
         statusText.set("Select columns.")
         message.configure(fg="Black")
         self.button_stratify_callback(var_dict=var_dict,entry=entry,statusText=statusText,message=message)
-    
-    """
 
 
 if __name__ == "__main__":
