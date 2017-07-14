@@ -22,10 +22,11 @@ def stratify(data_set,p,selected_columns,filename):
     df = df.reset_index()
     df[df.columns[-1]]
 
-    n = np.ceil(p*len(data_set))
+    n = np.ceil((p/100.)*len(data_set))
 
     # How to ensure sample size when rounding like this.
     df['Size'] = np.ceil(n*(df[df.columns[-1]]/len(data_set)).values)
+
 
     # And then cut from the larger groups.
     i=0
@@ -37,12 +38,12 @@ def stratify(data_set,p,selected_columns,filename):
 
     data_set['Group-RCT'] = ["Intervention" if x in ind_list else "Control" for x in data_set.index]
 
-    name=filename.rsplit(".")[0]+'_RCT'+'.xlsx'
+    name=filename.rsplit(".")[0]+","+",".join(selected_columns)+'-'+str(p)+'_RCT'+'.xlsx'
     data_set.to_excel(name)
     return name
 
 
-def update_stratification(data_set,p,selected_columns,filename,new_filename):
+def update_stratification(data_rct,data_new,sample_p,selected_columns,filename1):
     """ 
     Stratified random sampling
     SPECIAL CASE, WHEN THERE IS ONLY ONE STRATUM PER INDIVIDUAL.
@@ -56,15 +57,38 @@ def update_stratification(data_set,p,selected_columns,filename,new_filename):
 
     import pandas as pd
     import numpy as np
-    p = 0.50
-    data_set = pd.read_excel('test_RCT.xlsx') # this would actually be csv but whatevs
+    p = int(sample_p)/100.
+
+
+
+    print("p")
+    print(sample_p)
+    print("Existing data")
+    print(data_rct.head())
+
+    print("New data")
+    print(data_new.head())
+
+    data_set = data_rct#pd.read_excel(filename)
+    #data_new = pd.read_excel(new_filename)#
     data_set.dropna(axis=1,inplace=True)
     data_set = data_set.apply(lambda x: x.astype(str).str.lower())
+
+    data_new.dropna(axis=1,inplace=True)
+    data_new = data_new.apply(lambda x: x.astype(str).str.lower())
+
     data_set.ix[:, data_set.columns != 'Group-RCT']
-    data_new = pd.read_excel('test.xlsx')
+    #data_new = pd.read_excel('test.xlsx')
     data_temp = data_new.append(data_set.ix[:, data_set.columns != 'Group-RCT']) # there will be a problem with indexing, I can see it coming.
     selected_columns = [u'Gender',u'Race']
     print(selected_columns)
+
+    print("RCT data:")
+    print(data_set.head())
+
+    print("New data:")
+    print(data_new.head())
+
     df = data_temp.groupby(selected_columns).count().max(axis=1).reset_index()
     control_pre = pd.crosstab(data_set['Group-RCT'],[pd.Series(data_set[cols]) for cols in selected_columns]).loc['control'].reset_index()
     n = np.ceil(p*len(data_temp))
@@ -81,10 +105,9 @@ def update_stratification(data_set,p,selected_columns,filename,new_filename):
         else:
             pass
         i+=1
-
     data_new['Group-RCT'] = ["Intervention" if x in ind_list else "Control" for x in data_new.index]
 
 
-    name=filename.rsplit(".")[0]+'_RCT'+'.xlsx'
+    name=filename1.rsplit(".")[0]+'.xlsx'
     data_new.append(data_set).to_excel(name)
     return name
