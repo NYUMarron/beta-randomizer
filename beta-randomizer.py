@@ -27,7 +27,17 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from Tkinter import BooleanVar
 from Tkinter import StringVar
 
-#global data, strat_columns, filename, filename1, filename2, rct, data_rct, data_new
+global data, strat_columns, filename, filename1, filename2, rct, data_rct, data_new, sample_p
+
+
+data = pd.DataFrame([])
+rct = pd.DataFrame([])
+data_rct = pd.DataFrame([])
+data_new = pd.DataFrame([])
+strat_columns = []
+filename1, filename2, filename = "","",""
+sample_p = 0.
+
 
 
 class gui(tk.Tk):
@@ -41,14 +51,14 @@ class gui(tk.Tk):
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
-        self.data = pd.DataFrame([])
-        self.rct = pd.DataFrame([])
-        self.data_rct = pd.DataFrame([])
-        self.data_new = pd.DataFrame([])
-        self.strat_columns = []
-        self.filename1, self.filename2, self.filename = "","",""
-        self.sample_p = 0.
-        self.raise_vble_warning = False
+        #self.data = pd.DataFrame([])
+        #self.rct = pd.DataFrame([])
+        #self.data_rct = pd.DataFrame([])
+        #self.data_new = pd.DataFrame([])
+        #self.strat_columns = []
+        #self.filename1, self.filename2, self.filename = "","",""
+        #self.sample_p = 0.
+        #self.raise_vble_warning = False
 
         self.frames = {}
 
@@ -79,7 +89,7 @@ class main_frame(tk.Frame):
         separator = tk.Frame(self, height=2, bd=1, relief=tk.SUNKEN)
         separator.pack(fill=tk.X, padx=5, pady=5)
         print("Pruebilla")
-        print(self.controller.filename)
+        print(filename)
         message = tk.Label(self, textvariable=statusText)
         message.pack()
 
@@ -113,6 +123,7 @@ class first_frame(tk.Frame):
         self.parent = parent
 
         self.show_frame = controller.show_frame
+        self.raise_vble_warning = False
 
         statusText = tk.StringVar(self)
         statusText.set("Press Browse button or enter CSV filename, "
@@ -145,13 +156,16 @@ class first_frame(tk.Frame):
         message.pack()
 
     def button_browse_callback(self,entry):
+        global filename 
         """ What to do when the Browse button is pressed """
-        self.controller.filename = tkFileDialog.askopenfilename()
+        #self.controller.filename = tkFileDialog.askopenfilename()
+        filename = tkFileDialog.askopenfilename()
         entry.delete(0, tk.END)
         entry.insert(0, self.controller.filename)
 
     def button_go_callback(self,entry,statusText,message):
         """ what to do when the "Go" button is pressed """
+        global data 
         input_file = entry.get()
         if input_file.rsplit(".")[-1] not in ["csv","xlsx","xls"] :
             statusText.set("Filename must end in `.xlsx', '.csv' or '.xls'")
@@ -165,8 +179,11 @@ class first_frame(tk.Frame):
             data.dropna(axis=1,inplace=True) # remove upper case.
             data = data.apply(lambda x: x.astype(str).str.lower()) # replace all special characters.
             data.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True)
+            data.columns = map(str, data.columns)
+            data.columns = map(str.lower, data.columns)
+            data.columns = data.columns.str.replace(' ','')
 
-            self.controller.data = data
+            #self.controller.data = data
 
             #self.controller.show_frame(second_frame)
             sf = second_frame(self.parent, self)
@@ -206,7 +223,7 @@ class second_frame(tk.Frame):
         entry.pack()
 
 
-        data = gui.data
+        #data = gui.data
 
 
         for col in data.columns:
@@ -245,8 +262,9 @@ class second_frame(tk.Frame):
 
     def button_stratify_callback(self,var_dict,entry,statusText,message,*args,**kwargs):
         """ what to do when the "Go" button is pressed """
-        strat_columns = self.controller.strat_columns
-        data = self.controller.data
+        global strat_columns, sample_p
+        #strat_columns = self.controller.strat_columns
+        #data = self.controller.data
         for cols,vs in var_dict.iteritems():
             if vs.get():
                 if "dob" in cols.lower():
@@ -275,10 +293,8 @@ class second_frame(tk.Frame):
                     strat_columns.append(cols)
                 else:
                     strat_columns.append(cols)
-        self.controller.strat_columns = strat_columns
-        self.controller.data = data
-        #if strat_columns == []:
-        #    strat_columns = ['Sex','Risk','Race']
+        #self.controller.strat_columns = strat_columns
+        #self.controller.data = data
         
         if self.controller.raise_vble_warning and (self.warnings<1):
             self.warning_1(var_dict,entry,statusText,message)
@@ -296,7 +312,8 @@ class second_frame(tk.Frame):
             
             if 0 <= sample_p <= 100:
                 print(strat_columns)
-                prefix = stratify(data_set=self.controller.data,p=sample_p,selected_columns=strat_columns,filename=self.controller.filename) 
+                prefix = stratify(data_set=data,p=sample_p,selected_columns=strat_columns,filename=filename) 
+                #prefix = stratify(data_set=self.controller.data,p=sample_p,selected_columns=strat_columns,filename=self.controller.filename) 
                 if prefix is None:
                     statusText.set("Error creating random sample.")
                     message.configure(fg="red")
@@ -313,10 +330,13 @@ class second_frame(tk.Frame):
             #    message.configure(fg="red")
 
     def button_balance_callback(self,statusText,message,*args,**kwargs):
+        global rct
         #try:
         #rct = pd.read_excel(filename.rsplit(".")[0]+'_RCT'+'.xlsx')
-        rct = pd.read_excel(self.controller.filename.rsplit(".")[0]+","+",".join(self.controller.strat_columns)+'-'+str(self.controller.sample_p)+'_RCT'+'.xlsx')
-        self.controller.rct = rct
+        rct = pd.read_excel(filename.rsplit(".")[0]+","+",".join(strat_columns)+'-'+str(sample_p)+'_RCT'+'.xlsx')
+        #self.controller.rct = rct
+        #rct = pd.read_excel(self.controller.filename.rsplit(".")[0]+","+",".join(self.controller.strat_columns)+'-'+str(self.controller.sample_p)+'_RCT'+'.xlsx')
+
         #print(rct)
         #self.controller.show_frame(balance_frame,rct=rct)
 
@@ -343,6 +363,7 @@ class second_frame(tk.Frame):
     
 
 class balance_frame(tk.Frame):
+    global rct, strat_columns
     def __init__(self,parent,controller):
         tk.Frame.__init__(self,parent)
         self.controller = controller
@@ -357,8 +378,8 @@ class balance_frame(tk.Frame):
         button_return = tk.Button(self, text="Return to main window",
                            command=lambda: controller.show_frame(main_frame))
 
-        rct = self.controller.rct 
-        strat_columns = self.controller.strat_columns
+        #rct = self.controller.rct 
+        #strat_columns = self.controller.strat_columns
         i = 0
         if len(strat_columns)>0:
             fig, axes = plt.subplots(len(strat_columns), 1)
@@ -400,6 +421,7 @@ class balance_frame(tk.Frame):
 class first_frame_existing(tk.Frame):
 
     def __init__(self,parent,controller):
+        global sample_p
         tk.Frame.__init__(self,parent)
         self.controller = controller
         self.parent = parent
@@ -456,18 +478,21 @@ class first_frame_existing(tk.Frame):
         message.pack()
 
     def button_browse_callback_1(self,entry):
+        global filename1
         filename1 = tkFileDialog.askopenfilename()
         entry.delete(0, tk.END)
         entry.insert(0, filename1)
         self.controller.filename1 = filename1
 
     def button_browse_callback_2(self,entry):
+        global filename2
         filename2 = tkFileDialog.askopenfilename()
         entry.delete(0, tk.END)
         entry.insert(0, filename2)
         self.controller.filename2 = filename2
 
     def button_go_callback(self,entry1,entry2,statusText,message,controller):
+        global data_new, data_rct
         input_file_1 = entry1.get()
         input_file_2 = entry2.get()
 
@@ -490,6 +515,11 @@ class first_frame_existing(tk.Frame):
                 # delete empty columns
                 data_rct.dropna(axis=1,how='all',inplace=True)
                 data_rct.dropna(axis=0,how='all',inplace=True)
+
+                data_rct.columns = map(str, data_rct.columns)
+                data_rct.columns = map(str.lower, data_rct.columns)
+                data_rct.columns=data_rct.columns.str.replace(' ','')
+
                 # remove upper case.
                 try:
                     data_rct = data_rct.apply(lambda x: x.astype(str).str.lower())
@@ -497,24 +527,29 @@ class first_frame_existing(tk.Frame):
                 # replace all special characters.
                     data_rct.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True, inplace=True)
 
-
-
                 data_new = pd.read_excel(self.controller.filename2)
-                print(data_new)
+
                 # delete empty columns
                 data_new.dropna(axis=1,how='all',inplace=True)
                 data_new.dropna(axis=0,how='all',inplace=True,subset=data_new.columns[2:])
-                print(data_new)
+
                 # remove upper case.
                 data_new = data_new.apply(lambda x: x.astype(str).str.lower())
                 # replace all special characters.
                 data_new.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True, inplace=True)
+                data_new.columns = map(str, data_new.columns)
+                data_new.columns = map(str.lower, data_new.columns)
+                data_new.columns = data_new.columns.str.replace(' ','')
 
                 self.controller.data_new = data_new
 
-                if 'Group-RCT' in data_rct.columns:
+                if 'group-rct' in data_rct.columns:
+                    print(set(data_rct.columns))
+                    print(set(data_rct.columns)-set(['group-rct','date']))
+                    print(set(data_new.columns))
                     #controller.show_frame("second_frame_existing")
-                    if set(data_rct.columns)-set(['Group-RCT']) ==  set(data_new.columns):
+                    if set(data_rct.columns)-set(['group-rct','date']) ==  set(data_new.columns):
+
                         #sf = second_frame_existing(self.parent, self)
                         #sf.grid(row=0, column=0, sticky="nsew")
                         #sf.tkraise()
@@ -535,6 +570,8 @@ class first_frame_existing(tk.Frame):
 
 class second_frame_existing(tk.Frame):
 
+    global strat_columns
+
     """ 
     Description of this second frame 
     """
@@ -549,7 +586,7 @@ class second_frame_existing(tk.Frame):
         self.warnings=0
     
         try:
-            self.controller.strat_columns = self.controller.filename1.rsplit("-")[-2].rsplit(",")[1:]
+            strat_columns = filename1.rsplit("-")[-2].rsplit(",")[1:]
         except IndexError:
             pass
         #print(filename1.rsplit("-"))
@@ -569,7 +606,6 @@ class second_frame_existing(tk.Frame):
      
         button_balance = tk.Button(self, text="Return",
                            command=lambda: 1)
-        
 
         button_return.pack()
         button_balance.pack()
@@ -587,16 +623,18 @@ class second_frame_existing(tk.Frame):
 
         message_up.pack()
 
-        self.controller.sample_p = self.controller.filename1.rsplit("-")[-1].rsplit("_")[0]
+        sample_p = filename1.rsplit("-")[-1].rsplit("_")[0]
         print("filename1")
-        print(self.controller.filename1)
+        print(filename1)
 
 
-        button_stratify = tk.Button(self,text="Randomize new individuals",command=lambda: self.button_stratify_callback(self.controller.data_rct,self.controller.data_new,self.controller.sample_p,self.controller.strat_columns,self.controller.filename1,statusText_up,message_up))
+        button_stratify = tk.Button(self,text="Randomize new individuals",command=lambda: self.button_stratify_callback(data_rct,data_new,sample_p,strat_columns,filename1,statusText_up,message_up))
+        #button_stratify = tk.Button(self,text="Randomize new individuals",command=lambda: self.button_stratify_callback(self.controller.data_rct,self.controller.data_new,self.controller.sample_p,self.controller.strat_columns,self.controller.filename1,statusText_up,message_up))
         button_stratify.pack()
 
     def button_stratify_callback(self,data_rct,data_new,sample_p,strat_columns,filename1,statusText,message,*args,**kwargs):
-        prefix = update_stratification(data_rct=self.controller.data_rct,data_new=self.controller.data_new,sample_p=self.controller.sample_p,selected_columns=self.controller.strat_columns,filename1=self.controller.filename1) 
+        #prefix = update_stratification(data_rct=self.controller.data_rct,data_new=self.controller.data_new,sample_p=self.controller.sample_p,selected_columns=self.controller.strat_columns,filename1=self.controller.filename1) 
+        prefix = update_stratification(data_rct=data_rct, data_new=data_new, sample_p=sample_p, selected_columns=strat_columns, filename1=filename1) 
 
         if prefix is None:
             statusText.set("Error updating sample.")
