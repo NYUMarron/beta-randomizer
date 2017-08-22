@@ -483,6 +483,7 @@ class first_frame_existing(tk.Frame):
         entry.delete(0, tk.END)
         entry.insert(0, filename1)
         self.controller.filename1 = filename1
+        return filename1
 
     def button_browse_callback_2(self,entry):
         global filename2
@@ -550,11 +551,11 @@ class first_frame_existing(tk.Frame):
                     #controller.show_frame("second_frame_existing")
                     if set(data_rct.columns)-set(['group-rct','date']) ==  set(data_new.columns):
 
-                        #sf = second_frame_existing(self.parent, self)
-                        #sf.grid(row=0, column=0, sticky="nsew")
-                        #sf.tkraise()
+                        sf = second_frame_existing(self.parent, self)
+                        sf.grid(row=0, column=0, sticky="nsew")
+                        sf.tkraise()
 
-                        self.controller.show_frame(second_frame_existing)
+                        #self.controller.show_frame(second_frame_existing)
                     else:
 
                         statusText.set("Files must have the same structure (columns).")
@@ -570,7 +571,6 @@ class first_frame_existing(tk.Frame):
 
 class second_frame_existing(tk.Frame):
 
-    global strat_columns
 
     """ 
     Description of this second frame 
@@ -584,15 +584,23 @@ class second_frame_existing(tk.Frame):
         self.controller = controller
         self.parent = parent
         self.warnings=0
-    
+        
         try:
             strat_columns = filename1.rsplit("-")[-2].rsplit(",")[1:]
+            strat_columns = [''.join(c.lower() for c in x if not c.isspace()) for x in strat_columns]
+
         except IndexError:
+            strat_columns = []
             pass
         #print(filename1.rsplit("-"))
+        
         var_dict = {}
         statusText = tk.StringVar(self)
         statusText.set(" ")
+
+        print(filename1)
+        if filename1!='':
+            print(strat_columns)
 
         message = tk.Label(self, textvariable=statusText)
         message.pack()
@@ -620,12 +628,8 @@ class second_frame_existing(tk.Frame):
         statusText_up.set(" ")
 
         message_up = tk.Label(self, textvariable=statusText_up)
-
         message_up.pack()
-
         sample_p = filename1.rsplit("-")[-1].rsplit("_")[0]
-        print("filename1")
-        print(filename1)
 
 
         button_stratify = tk.Button(self,text="Randomize new individuals",command=lambda: self.button_stratify_callback(data_rct,data_new,sample_p,strat_columns,filename1,statusText_up,message_up))
@@ -633,6 +637,7 @@ class second_frame_existing(tk.Frame):
         button_stratify.pack()
 
     def button_stratify_callback(self,data_rct,data_new,sample_p,strat_columns,filename1,statusText,message,*args,**kwargs):
+
         #prefix = update_stratification(data_rct=self.controller.data_rct,data_new=self.controller.data_new,sample_p=self.controller.sample_p,selected_columns=self.controller.strat_columns,filename1=self.controller.filename1) 
         prefix = update_stratification(data_rct=data_rct, data_new=data_new, sample_p=sample_p, selected_columns=strat_columns, filename1=filename1) 
 
