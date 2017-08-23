@@ -284,13 +284,6 @@ class second_frame(tk.Frame):
                     self.controller.raise_vble_warning = True
                     if self.warnings>0:    
                         strat_columns.append(cols)
-                elif ('age' in cols.lower()):
-                    qtile = data[cols].astype('int64').quantile([0.,0.25,0.5,0.75]).values.astype('int')
-                    data[cols] = data[cols].astype('int64')
-                    data.loc[data[cols] > qtile[len(qtile)-1], cols] = '['+str(qtile[len(qtile)-1])+'-'+str(data[cols].max())+']'
-                    for i in range(len(qtile)-1):
-                        data.loc[(data[cols]>=qtile[i]) & (data[cols]<qtile[i+1]),cols] = '['+str(qtile[i])+'-'+str(qtile[i+1])+')'
-                    strat_columns.append(cols)
                 else:
                     strat_columns.append(cols)
         #self.controller.strat_columns = strat_columns
@@ -301,8 +294,6 @@ class second_frame(tk.Frame):
         else:
             #try:
             sample_p = int(entry.get())
-
-
             n = len(data)
             min_n = len(strat_columns)*2
 
@@ -546,8 +537,10 @@ class first_frame_existing(tk.Frame):
 
                 if 'group-rct' in data_rct.columns:
                     print(set(data_rct.columns))
+                    print(set(data_rct))
                     print(set(data_rct.columns)-set(['group-rct','date']))
                     print(set(data_new.columns))
+                    print(set(data_new))
                     #controller.show_frame("second_frame_existing")
                     if set(data_rct.columns)-set(['group-rct','date']) ==  set(data_new.columns):
 
