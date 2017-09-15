@@ -25,10 +25,15 @@ def stratify(data_set,p,selected_columns,filename):
     df[df.columns[-1]]
 
     n = np.ceil((p/100.)*len(data_set))
+    print(n)
+    print("df")
+    print(df)
 
     # How to ensure sample size when rounding like this.
     df['Size'] = np.ceil(n*(df[df.columns[-1]]/len(data_set)).values)
 
+    print("df size")
+    print(df)
 
     # And then cut from the larger groups.
     i=0

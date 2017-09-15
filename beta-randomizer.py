@@ -161,7 +161,7 @@ class first_frame(tk.Frame):
         #self.controller.filename = tkFileDialog.askopenfilename()
         filename = tkFileDialog.askopenfilename()
         entry.delete(0, tk.END)
-        entry.insert(0, self.controller.filename)
+        entry.insert(0, filename)
 
     def button_go_callback(self,entry,statusText,message):
         """ what to do when the "Go" button is pressed """
@@ -175,7 +175,7 @@ class first_frame(tk.Frame):
                 #try:
                     #data = pd.read_csv(filename)
                 #except:
-            data = pd.read_excel(self.controller.filename) # delete empty columns
+            data = pd.read_excel(filename) # delete empty columns
             data.dropna(axis=1,inplace=True) # remove upper case.
             data = data.apply(lambda x: x.astype(str).str.lower()) # replace all special characters.
             data.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True)
@@ -227,7 +227,7 @@ class second_frame(tk.Frame):
 
 
         for col in data.columns:
-            if "CCIS" in col:
+            if "ccis" in col:
                 pass
             elif ("name" in col) or ("Name" in col) or ("Surname" in col):
                 pass
@@ -376,10 +376,10 @@ class balance_frame(tk.Frame):
             fig, axes = plt.subplots(len(strat_columns), 1)
             if hasattr(axes, '__iter__'):
                 for row in axes:
-                    df = (100*(pd.crosstab(rct['Group-RCT'],rct[strat_columns[i]],normalize='columns')))
+                    df = (100*(pd.crosstab(rct['group-rct'],rct[strat_columns[i]],normalize='columns')))
                     df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
                     ax_curr = axes[i]
-                    sns.barplot(hue=df['Group-RCT'],y = df['Percentage'],x=df[strat_columns[i]],ax=ax_curr)
+                    sns.barplot(hue=df['group-rct'],y = df['Percentage'],x=df[strat_columns[i]],ax=ax_curr)
                     plt.ylim([0,100])
                     plt.tight_layout()
                     i+=1
@@ -503,7 +503,7 @@ class first_frame_existing(tk.Frame):
                 message.configure(fg="red")
             else:  
                 
-                data_rct = pd.read_excel(self.controller.filename1)
+                data_rct = pd.read_excel(filename1)
                 # delete empty columns
                 data_rct.dropna(axis=1,how='all',inplace=True)
                 data_rct.dropna(axis=0,how='all',inplace=True)
@@ -519,7 +519,7 @@ class first_frame_existing(tk.Frame):
                 # replace all special characters.
                     data_rct.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True, inplace=True)
 
-                data_new = pd.read_excel(self.controller.filename2)
+                data_new = pd.read_excel(filename2)
 
                 # delete empty columns
                 data_new.dropna(axis=1,how='all',inplace=True)
@@ -533,7 +533,7 @@ class first_frame_existing(tk.Frame):
                 data_new.columns = map(str.lower, data_new.columns)
                 data_new.columns = data_new.columns.str.replace(' ','')
 
-                self.controller.data_new = data_new
+                #self.controller.data_new = data_new
 
                 if 'group-rct' in data_rct.columns:
                     print(set(data_rct.columns))
