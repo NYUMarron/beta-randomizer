@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import datetime as dt
 
-def stratify(data_set,p,selected_columns,filename):
+def stratify(self):
     """ 
     Stratified random sampling
     SPECIAL CASE, WHEN THERE IS ONLY ONE STRATUM PER INDIVIDUAL.
@@ -15,6 +15,9 @@ def stratify(data_set,p,selected_columns,filename):
     """
 
     #data = pd.read_csv('Randomization_short.csv') #'NYU - Franklin JIYA to randomizecaseloads.xlsx'
+    data_set = self.data
+    selected_columns = self.strat_columns
+
     data_set.dropna(axis=1,inplace=True)#,how='all')
     data_set = data_set.apply(lambda x: x.astype(str).str.lower())
     print(selected_columns)
@@ -24,7 +27,7 @@ def stratify(data_set,p,selected_columns,filename):
     df = df.reset_index()
     df[df.columns[-1]]
 
-    n = np.ceil((p/100.)*len(data_set))
+    n = np.ceil((self.sample_p/100.)*len(data_set))
     print(n)
     print("df")
     print(df)
@@ -45,13 +48,13 @@ def stratify(data_set,p,selected_columns,filename):
 
     data_set['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_set.index]
 
-    name=filename.rsplit(".")[0]+","+",".join(selected_columns)+'-'+str(p)+'_RCT'+'.xlsx'
+    name=self.filename.rsplit(".")[0]+","+",".join(selected_columns)+'-'+str(self.sample_p)+'_RCT'+'.xlsx'
     data_set.to_excel(name)
     data_set.loc[age_index,'age'] = age_copy
     return name
 
 
-def update_stratification(data_rct,data_new,sample_p,selected_columns,filename1):
+def update_stratification(self):
     """ 
     Stratified random sampling
     SPECIAL CASE, WHEN THERE IS ONLY ONE STRATUM PER INDIVIDUAL.
@@ -62,8 +65,6 @@ def update_stratification(data_rct,data_new,sample_p,selected_columns,filename1)
     """
 
     #data = pd.read_csv('Randomization_short.csv') #'NYU - Franklin JIYA to randomizecaseloads.xlsx'
-
-    global my_data
 
     #data_set = pd.read_excel('Randomized/Originals Aug 22/NYU - Hamilton JIYA June 20,          AGE,RISK SCORE,Gender,Race-50_RCT.xlsx')
     #data_new = pd.read_excel('To randomize Aug 22/Hamilton County cases to be randomized 8-15-17.xlsx')
