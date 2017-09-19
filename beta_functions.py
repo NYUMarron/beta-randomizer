@@ -69,16 +69,16 @@ def update_stratification(self):
     #data_set = pd.read_excel('Randomized/Originals Aug 22/NYU - Hamilton JIYA June 20,          AGE,RISK SCORE,Gender,Race-50_RCT.xlsx')
     #data_new = pd.read_excel('To randomize Aug 22/Hamilton County cases to be randomized 8-15-17.xlsx')
 
-    p = int(sample_p)/100.
+    p = int(self.sample_p)/100.
     print("p")
-    print(sample_p)
+    print(self.sample_p)
     print("Existing data")
-    print(data_rct.head())
+    print(self.data_rct.head())
 
     print("New data")
-    print(data_new.head())
+    print(self.data_new.head())
 
-    data_set = data_rct#pd.read_excel(filename)
+    data_set = self.data_rct#pd.read_excel(filename)
     #data_new = pd.read_excel(new_filename)#
     data_set.dropna(axis=0,inplace=True,how='all',subset=data_set.columns[2:])
     data_set.dropna(axis=1,inplace=True,how='all')
@@ -87,6 +87,7 @@ def update_stratification(self):
     except UnicodeEncodeError:
         pass
 
+    data_new = self.data_new
     data_new.dropna(axis=0,inplace=True,how='all',subset=data_new.columns[2:])
     try:
         data_new = data_new.apply(lambda x: x.astype(str).str.lower())
@@ -117,7 +118,7 @@ def update_stratification(self):
 
 
     data_set = data_temp[data_temp.date!=todaysdate]
-    df = data_set.groupby(selected_columns).size().reset_index()
+    df = data_set.groupby(self.selected_columns).size().reset_index()
     label = str((data_set_copy['group-rct'].value_counts(normalize=True)-.5).idxmin()) #that which is higher than something
 
     print("label")
@@ -158,7 +159,6 @@ def update_stratification(self):
     if assigned < diff:
         ind_list_b = data_temp[(data_temp['group-rct']=='')&(data_temp['date']==todaysdate)].sample(n=min(diff-assigned,len(data_temp[data_temp['date']==todaysdate]))).index.values
         ind_list   = np.append(ind_list,ind_list_b)
-    
     
     if label == 'control':
         data_new['group-rct'] = ["control" if x in ind_list else "intervention" for x in data_new.index]
