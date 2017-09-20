@@ -70,6 +70,7 @@ def update_stratification(self):
     #data_new = pd.read_excel('To randomize Aug 22/Hamilton County cases to be randomized 8-15-17.xlsx')
 
     p = int(self.sample_p)/100.
+    selected_columns = self.strat_columns
     print("p")
     print(self.sample_p)
     print("Existing data")
@@ -118,7 +119,7 @@ def update_stratification(self):
 
 
     data_set = data_temp[data_temp.date!=todaysdate]
-    df = data_set.groupby(self.selected_columns).size().reset_index()
+    df = data_set.groupby(selected_columns).size().reset_index()
     label = str((data_set_copy['group-rct'].value_counts(normalize=True)-.5).idxmin()) #that which is higher than something
 
     print("label")
@@ -165,7 +166,7 @@ def update_stratification(self):
     else:
         data_new['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_new.index]
         
-    name=filename1.rsplit(".")[0]+'.xlsx'
+    name=self.filename1.rsplit(".")[0]+'.xlsx'
     total_data  = data_new.append(data_set)
     total_data['age'] = age_copy
     total_data.to_excel(name)

@@ -31,8 +31,9 @@ class gui(tk.Frame):
         tk.Frame.__init__(self, master, *args, **kwargs)
         self.master = master
 
-        self.data, self.rct, self.data_rct, self.data_new = pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([])
-        self.filename, self.filename1,self.filename2 = "","",""
+        self.data, self.rct, self.data_rct, self.data_new, self.total_data = pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([])
+        self.filename, self.filename1, self.filename2 = "","",""
+        self.prefix = ''
         self.strat_columns = []
         self.sample_p = 0.
         self.raise_vble_warning = False
@@ -40,7 +41,7 @@ class gui(tk.Frame):
         self.main_frame()
         self.first_frame()
         self.second_frame()
-        self.balance_frame()
+        self.balance_frame(self.rct)
         self.first_frame_existing()
         self.second_frame_existing()
 
@@ -64,7 +65,7 @@ class gui(tk.Frame):
 
         tk.Button(self.mainframe, text="New randomization scheme", command=lambda: self.firstframe.tkraise()).pack()
         tk.Button(self.mainframe, text="Update existing randomization scheme", command=lambda: self.firstframeexisting.tkraise()).pack()
-        tk.Button(self,text="Exit",command=tk.sys.exit).pack()
+        tk.Button(self.mainframe, text="Exit",command=tk.sys.exit).pack()
 
     def first_frame(self):
 
@@ -113,7 +114,8 @@ class gui(tk.Frame):
                     #data = pd.read_csv(filename)
                 #except:
             data = pd.read_excel(self.filename) # delete empty columns
-            data.dropna(axis=1,inplace=True) # remove upper case.
+            data.dropna(axis=1,inplace=True,how='all') # remove upper case.
+            data.dropna(axis=0,inplace=True,how='all')
             data = data.apply(lambda x: x.astype(str).str.lower()) # replace all special characters.
             data.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True)
             data.columns = map(str, data.columns)
@@ -227,7 +229,7 @@ class gui(tk.Frame):
     def button_balance_callback(self):
         try:
             self.rct = pd.read_excel(self.filename.rsplit(".")[0]+","+",".join(self.strat_columns)+'-'+str(self.sample_p)+'_RCT'+'.xlsx')
-            self.balance_frame()
+            self.balance_frame(base_data=self.rct)
         except:
             self.statusText.set("It is first necessary to create a randomized sample.")
             self.message.configure(fg="red")
@@ -240,7 +242,7 @@ class gui(tk.Frame):
         self.message.configure(fg="Black")
         self.button_stratify_callback(self)
 
-    def balance_frame(self):
+    def balance_frame(self,base_data,new_data=None):
         self.balanceframe = tk.Frame(self.master)
         self.balanceframe.grid(row=0, column=0, sticky="nsew")
         self.label = tk.Label(self.balanceframe, text="Balance of the selected covariates")
@@ -249,30 +251,40 @@ class gui(tk.Frame):
         i = 0
         if len(self.strat_columns)>0:
             print("Has length")
-            fig, axes = plt.subplots(len(self.strat_columns),1) # fig, axes = plt.subplots(len(self.strat_columns), 1, squeeze=False)
-            print(axes)
-            
+            fig, axes = plt.subplots(len(self.strat_columns),1) 
             #if hasattr(axes, '__iter__'):
             try:
                 for row in axes:
-                    df = (100*(pd.crosstab(self.rct['group-rct'],self.rct[self.strat_columns[i]],normalize='columns')))
+                    df = (100*(pd.crosstab(base_data['group-rct'],base_data[self.strat_columns[i]],normalize='columns')))
                     df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
                     ax_curr = axes[i]
                     print(df)
                     print(ax_curr)
                     sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr)
+                    if not new_data.empty:
+                        df_pos = (100*(pd.crosstab(new_data['group-rct'],new_data[self.strat_columns[i]],normalize='columns')))
+                        df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
+                        sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr)
                     plt.ylim([0,100])
                     plt.tight_layout()
                     i+=1
                     print("Tried here")
             except:
-                df = (100*(pd.crosstab(self.rct['Group-RCT'],self.rct[self.strat_columns[i]],normalize='columns')))
+                df = (100*(pd.crosstab(base_data['group-rct'],base_data[self.strat_columns[i]],normalize='columns')))
                 df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
-                ax_curr = axes
-                sns.barplot(hue=df['Group-RCT'],y = df['Percentage'],x=df[strat_columns[i]],ax=ax_curr)
+                print("DATA FRAME PLOTTING - PRE")
+                print(df)
+                #ax_curr = axes
+                sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]])#, ax=ax_curr)
+                print(new_data)
+                if not new_data.empty:
+                    df_pos = (100*(pd.crosstab(new_data['group-rct'],new_data[self.strat_columns[i]],normalize='columns')))
+                    df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
+                    print("DATA FRAME PLOTTING - POS")
+                    print(df_pos)
+                    sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr)
                 plt.ylim([0,100])
                 plt.tight_layout()
-                i+=1
                 print("Tried there")
 
             self.canvas = FigureCanvasTkAgg(fig, self.balanceframe)
@@ -297,8 +309,8 @@ class gui(tk.Frame):
 
         self.var_dict = {}
 
-        self.statusText = tk.StringVar(self.firstframeexisting)
-        self.statusText.set("Press Browse button or enter CSV filename, "
+        self.statusText_ffe = tk.StringVar(self.firstframeexisting)
+        self.statusText_ffe.set("Press Browse button or enter CSV filename, "
                         "It must end in _RCT"
                         "then press the Go button")
 
@@ -322,8 +334,8 @@ class gui(tk.Frame):
 
         tk.Frame(self.firstframeexisting, height=2, bd=1, relief=tk.SUNKEN).pack(fill=tk.X, padx=5, pady=5)
 
-        self.message = tk.Label(self.firstframeexisting, textvariable=self.statusText)
-        self.message.pack()
+        self.message_ffe = tk.Label(self.firstframeexisting, textvariable=self.statusText_ffe)
+        self.message_ffe.pack()
         
         
     def button_browse_callback_1(self):
@@ -342,14 +354,19 @@ class gui(tk.Frame):
         input_file_1 = self.entry1.get()
         input_file_2 = self.entry2.get()
 
+        print("Go 2 callback")
+
         if (input_file_1.rsplit(".")[-1] not in ["xlsx"]) or (input_file_2.rsplit(".")[-1] not in ["csv","xlsx","xls"]):
-            self.statusText.set("RCT file must end in xlsx and new file must be in a valid format csv,xlsx,xls.")
-            self.message.configure(fg="red")
+            self.statusText_ffe.set("RCT file must end in xlsx and new file must be in a valid format csv,xlsx,xls.")
+            self.message_ffe.configure(fg="red")
+            print("Case 1")
         else:
             if input_file_1.rsplit(".")[0].rsplit("_")[-1] not in ["RCT"] :
-                self.statusText.set("RCT file must have been generated by this program. Its name should end in _RCT")
-                self.message.configure(fg="red")
+                self.statusText_ffe.set("RCT file must have been generated by this program. Its name should end in _RCT")
+                self.message_ffe.configure(fg="red")
+                print("Case 2")
             else:    
+                print("Case 3")
                 data_rct = pd.read_excel(self.filename1)
                 # delete empty columns
                 data_rct.dropna(axis=1,how='all',inplace=True)
@@ -381,66 +398,58 @@ class gui(tk.Frame):
                 data_new.columns = map(str.lower, data_new.columns)
                 data_new.columns = data_new.columns.str.replace(' ','')
                 self.data_new = data_new 
+                print(data_rct.head())
+                print(data_new.head())
                 if 'group-rct' in data_rct.columns:
+                    print("And we got in")
                     if set(data_rct.columns)-set(['group-rct','date']) ==  set(data_new.columns):
-                        self.second_frame_existing()
+                        self.sample_p = self.filename1.rsplit("-")[-1].rsplit("_")[0]
+                        try:
+                            strat_columns = self.filename1.rsplit("-")[-2].rsplit(",")[1:]
+                            self.strat_columns = [''.join(c.lower() for c in x if not c.isspace()) for x in strat_columns]
+                        except IndexError:
+                            self.strat_columns = []
+                            pass
+                        print("Second window should pop")
+                        self.prefix = update_stratification(self)
+                        if self.prefix is None:
+                            self.statusText_ffe.set("Error updating sample.")
+                            self.message_ffe.configure(fg="red")
+                        else:
+                            self.second_frame_existing()                
                     else:
-                        self.statusText.set("Files must have the same structure (columns).")
-                        self.message.configure(fg="red")
+                        print("Message should appear")
+                        self.statusText_ffe.set("Files must have the same structure (columns).")
+                        self.message_ffe.configure(fg="red")
                 else:                    
-                    self.statusText.set("The file should have been generated by this own program and thus have a Group-RCT column.")
-                    self.message.configure(fg="red")
-                pass
-        pass
+                    self.statusText_ffe.set("The file should have been generated by this own program and thus have a Group-RCT column.")
+                    self.message_ffe.configure(fg="red")
+                #pass
+            #pass
 
     def second_frame_existing(self):
 
         self.secondframeexisting = tk.Frame(self.master)
         self.secondframeexisting.grid(row=0, column=0, sticky="nsew")
-        self.warnings=0
-        try:
-            strat_columns = self.filename1.rsplit("-")[-2].rsplit(",")[1:]
-            self.strat_columns = [''.join(c.lower() for c in x if not c.isspace()) for x in strat_columns]
-        except IndexError:
-            self.strat_columns = []
-            pass
-        self.var_dict = {}
-        self.statusText = tk.StringVar(self.secondframeexisting)
-        self.statusText.set(" ")
 
-        print(self.filename1)
-        if self.filename1!='':
-            print(self.strat_columns)
+        self.warnings=0
+        self.var_dict = {}
+
+        self.statusText = tk.StringVar(self.secondframeexisting)
+        self.statusText.set("What would you like to do?")
 
         tk.Label(self.secondframeexisting, textvariable=self.statusText).pack()
         
+        tk.Button(self.secondframeexisting, text="See resulting balance", command=lambda: self.balance_frame(base_data=self.data_rct,new_data=self.total_data)).pack()
         tk.Button(self.secondframeexisting, text="Return", command=lambda: self.mainframe.tkraise()).pack()
-        tk.Button(self.secondframeexisting, text="See resulting balance", command=lambda: 1).pack()
         tk.Button(self.secondframeexisting, text="Exit", command=tk.sys.exit).pack()
 
-        self.message = tk.Label(self.secondframeexisting, textvariable=self.statusText)
-        self.message.configure(fg="black")
-        self.message.pack() 
-
         self.statusText_up = tk.StringVar(self.secondframeexisting)
-        self.statusText_up.set(" ")
+        self.statusText_up.set("Output is in file {}".format(self.prefix))
 
-        self.message_up = tk.Label(self.secondframeexisting, textvariable=self.statusText_up)
-        self.message_up.pack()
-        self.sample_p = self.filename1.rsplit("-")[-1].rsplit("_")[0]
-
-        tk.Button(self.secondframeexisting,text="Randomize new individuals",command=lambda: self.button_stratify_callback()).pack()
-
-    def button_stratify_callback(self): 
-
-        prefix = update_stratification(self)
-        if prefix is None:
-            self.statusText.set("Error updating sample.")
-            self.message.configure(fg="red")
-        else:
-            self.statusText.set("Output is in file {}".format(prefix))
-            # Consider adding a timestamp.
-            self.message.configure(fg="black")
+        self.message_sf = tk.Label(self.secondframeexisting, textvariable=self.statusText_up)
+        self.message_sf.configure(fg="black")
+        self.message_sf.pack() 
 
     def warning_1(self):
         tkMessageBox.showinfo("Warning","We suggest not to randomize based on parole officers or judges.")
@@ -449,6 +458,7 @@ class gui(tk.Frame):
         self.statusText.set("Select columns.")
         self.message.configure(fg="Black")
         self.button_stratify_callback(self)
+
         
 if __name__ == "__main__":
     root = tk.Tk()
