@@ -261,10 +261,13 @@ class gui(tk.Frame):
                     print(df)
                     print(ax_curr)
                     sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr)
+                    print("new_data")
+                    print(new_data)
+                    print(new_data.empty)
                     if not new_data.empty:
                         df_pos = (100*(pd.crosstab(new_data['group-rct'],new_data[self.strat_columns[i]],normalize='columns')))
                         df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
-                        sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr)
+                        sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr, alpha=0.4, color='darkred')
                     plt.ylim([0,100])
                     plt.tight_layout()
                     i+=1
@@ -282,7 +285,7 @@ class gui(tk.Frame):
                     df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
                     print("DATA FRAME PLOTTING - POS")
                     print(df_pos)
-                    sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr)
+                    sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr, alpha=0.4, color='darkred')
                 plt.ylim([0,100])
                 plt.tight_layout()
                 print("Tried there")

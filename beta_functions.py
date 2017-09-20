@@ -167,9 +167,9 @@ def update_stratification(self):
         data_new['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_new.index]
         
     name=self.filename1.rsplit(".")[0]+'.xlsx'
-    total_data  = data_new.append(data_set)
-    total_data['age'] = age_copy
-    total_data.to_excel(name)
+    self.total_data  = data_new.append(data_set)
+    self.total_data['age'] = age_copy
+    self.total_data.to_excel(name)
     return name
 
 def group_age(df):
