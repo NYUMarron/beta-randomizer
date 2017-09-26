@@ -24,19 +24,13 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from Tkinter import BooleanVar
 from Tkinter import StringVar
 
+sns.set_style("whitegrid")
 
 class gui(tk.Frame):
 
     def __init__(self, master, *args, **kwargs):
         tk.Frame.__init__(self, master, *args, **kwargs)
         self.master = master
-
-        self.data, self.rct, self.data_rct, self.data_new, self.total_data = pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([])
-        self.filename, self.filename1, self.filename2 = "","",""
-        self.prefix = ''
-        self.strat_columns = []
-        self.sample_p = 0.
-        self.raise_vble_warning = False
 
         self.main_frame()
         self.first_frame()
@@ -47,15 +41,20 @@ class gui(tk.Frame):
 
         self.mainframe.tkraise()
 
-    def get_page(self, page_class):
-        return self.frames[page_class]
-
-
     def main_frame(self):
         print("Main frame initialized")
-        self.mainframe = tk.Frame(self.master)
-        self.mainframe.grid(row=0, column=0, sticky="nsew")
 
+
+        self.data, self.rct, self.data_rct, self.data_new, self.total_data = pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([])
+        self.filename, self.filename1, self.filename2 = "","",""
+        self.prefix = ''
+        self.strat_columns = []
+        self.sample_p = 0.
+        self.raise_vble_warning = False
+
+        self.mainframe = tk.Frame(self.master,width=300, height=350)
+        self.mainframe.grid(row=0, column=0, sticky="nsew")
+        
         self.statusText = tk.StringVar(self)
         self.statusText.set("What would you like to do?")
 
@@ -63,13 +62,13 @@ class gui(tk.Frame):
         self.message = tk.Label(self, textvariable=self.statusText)
         self.message.pack()
 
-        tk.Button(self.mainframe, text="New randomization scheme", command=lambda: self.firstframe.tkraise()).pack()
-        tk.Button(self.mainframe, text="Update existing randomization scheme", command=lambda: self.firstframeexisting.tkraise()).pack()
-        tk.Button(self.mainframe, text="Exit",command=tk.sys.exit).pack()
+        tk.Button(self.mainframe, text="New randomization scheme", command=lambda: self.firstframe.tkraise()).pack(expand=True,side=tk.TOP)
+        tk.Button(self.mainframe, text="Update existing randomization scheme", command=lambda: self.firstframeexisting.tkraise()).pack(expand=True,side=tk.TOP )
+        tk.Button(self.mainframe, text="Exit",command=tk.sys.exit).pack(expand=True,side=tk.BOTTOM)
 
     def first_frame(self):
 
-        self.firstframe = tk.Frame(self.master)
+        self.firstframe = tk.Frame(self.master,width=300, height=350)
         self.firstframe.grid(row=0, column=0, sticky="nsew")
 
         self.raise_vble_warning = False
@@ -77,22 +76,22 @@ class gui(tk.Frame):
         self.statusText = tk.StringVar()
         self.statusText.set("Press Browse button or enter CSV filename, "
                         "then press the Go button")
-        self.label = tk.Label(self.firstframe, text="Please load a file: ").pack()
+        self.label = tk.Label(self.firstframe, text="Please load a file: ").pack(expand=True)
 
         self.first_frame_entry = tk.Entry(self.firstframe, width=50)
-        self.first_frame_entry.pack()
+        self.first_frame_entry.pack(expand=True)
 
         tk.Frame(self, height=2, bd=1, relief=tk.SUNKEN).pack(fill=tk.X, padx=5, pady=5)
 
-        tk.Button(self.firstframe, text="Browse", command=lambda: self.button_browse_callback()).pack()
-        tk.Button(self.firstframe, text="Go", command=lambda: self.button_go_callback()).pack()
-        tk.Button(self.firstframe, text="Return", command=lambda: self.mainframe.tkraise()).pack()
-        tk.Button(self.firstframe, text="Exit", command=tk.sys.exit).pack()
+        tk.Button(self.firstframe, text="Browse", command=lambda: self.button_browse_callback()).pack(expand=True)
+        tk.Button(self.firstframe, text="Go", command=lambda: self.button_go_callback()).pack(expand=True)
+        tk.Button(self.firstframe, text="Return", command=lambda: self.mainframe.tkraise()).pack(expand=True)
+        tk.Button(self.firstframe, text="Exit", command=tk.sys.exit).pack(expand=True,side=tk.BOTTOM)
 
         tk.Frame(self.firstframe, height=2, bd=1, relief=tk.SUNKEN).pack(fill=tk.X, padx=5, pady=5)
 
         self.message = tk.Label(self, textvariable=self.statusText)
-        self.message.pack()
+        self.message.pack(expand=True)
 
     def button_browse_callback(self):
         self.filename = tkFileDialog.askopenfilename()
@@ -136,7 +135,7 @@ class gui(tk.Frame):
 
         print("Second frame initialized")
 
-        self.secondframe = tk.Frame(self.master)
+        self.secondframe = tk.Frame(self.master,width=300, height=350)
         self.secondframe.grid(row=0, column=0, sticky="nsew")
 
         tk.Frame(self.secondframe, height=2, bd=1, relief=tk.SUNKEN).pack(fill=tk.X, padx=5, pady=5)
@@ -242,11 +241,18 @@ class gui(tk.Frame):
         self.message.configure(fg="Black")
         self.button_stratify_callback(self)
 
-    def balance_frame(self,base_data,new_data=None):
-        self.balanceframe = tk.Frame(self.master)
+    def balance_frame(self,base_data,new_data=pd.DataFrame([])):
+        self.balanceframe = tk.Frame(self.master,width=666, height=950)
         self.balanceframe.grid(row=0, column=0, sticky="nsew")
+        #self.master.minsize(width=666, height=950)
+
         self.label = tk.Label(self.balanceframe, text="Balance of the selected covariates")
+        self.label.config(font=("Arial", 34))
         self.label.pack()
+
+        tk.Label(self.balanceframe, text="Control group size: ")
+        tk.Label(self.balanceframe, text="Intervention group size: ")
+
         print("Balance frame initiated")
         i = 0
         if len(self.strat_columns)>0:
@@ -255,53 +261,69 @@ class gui(tk.Frame):
             #if hasattr(axes, '__iter__'):
             try:
                 for row in axes:
-                    df = (100*(pd.crosstab(base_data['group-rct'],base_data[self.strat_columns[i]],normalize='columns')))
-                    df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
+                    print("Tried here")
                     ax_curr = axes[i]
-                    print(df)
-                    print(ax_curr)
-                    sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr)
-                    print("new_data")
-                    print(new_data)
-                    print(new_data.empty)
-                    if not new_data.empty:
-                        df_pos = (100*(pd.crosstab(new_data['group-rct'],new_data[self.strat_columns[i]],normalize='columns')))
-                        df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
-                        sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr, alpha=0.4, color='darkred')
-                    plt.ylim([0,100])
+                    if self.strat_columns[i] != 'age':
+                        df = (100*(pd.crosstab(base_data['group-rct'],base_data[self.strat_columns[i]],normalize='columns')))
+                        df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
+                        ax_curr.axhline(y=self.sample_p,c="darkred",linewidth=1,zorder=3)
+                        sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr,zorder=1)
+                        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+                        ax_curr.set_ylabel('Percentage [%]')
+                        if not new_data.empty:
+                            df_pos = (100*(pd.crosstab(new_data['group-rct'],new_data[self.strat_columns[i]],normalize='columns')))
+                            df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
+                            sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr, ls='dashed', lw = 30, zorder=2)
+                    else:
+                        sns.boxplot(base_data['group-rct'],base_data[self.strat_columns[i]],ax=ax_curr,zorder=1)
+                        if not new_data.empty:
+                            sns.boxplot(new_data['group-rct'],new_data[self.strat_columns[i]],ax=ax_curr, ls='dashed', lw = 30, zorder=2)
+                            plt.ylim([new_data[self.strat_columns[i]].min(),new_data[self.strat_columns[i]].max()])
+                    #plt.ylim([0,100])
                     plt.tight_layout()
                     i+=1
-                    print("Tried here")
             except:
-                df = (100*(pd.crosstab(base_data['group-rct'],base_data[self.strat_columns[i]],normalize='columns')))
-                df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
-                print("DATA FRAME PLOTTING - PRE")
-                print(df)
-                #ax_curr = axes
-                sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]])#, ax=ax_curr)
-                print(new_data)
-                if not new_data.empty:
-                    df_pos = (100*(pd.crosstab(new_data['group-rct'],new_data[self.strat_columns[i]],normalize='columns')))
-                    df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
-                    print("DATA FRAME PLOTTING - POS")
-                    print(df_pos)
-                    sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr, alpha=0.4, color='darkred')
-                plt.ylim([0,100])
-                plt.tight_layout()
                 print("Tried there")
+                ax_curr = axes
+                if self.strat_columns[i] != 'age':
+                    df = (100*(pd.crosstab(base_data['group-rct'], base_data[self.strat_columns[i]], normalize='columns')))
+                    df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
+                    print("DATA FRAME PLOTTING - PRE")
+                    print(df)
+                    ax_curr.axhline(y=self.sample_p,c="darkred",linewidth=1,zorder=3)
+                    sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr, zorder=1)
+                    ax_curr.set_ylabel('Percentage [%]')
+                    if not new_data.empty:
+                        df_pos = (100*(pd.crosstab(new_data['group-rct'], new_data[self.strat_columns[i]], normalize='columns')))
+                        df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
+                        print("DATA FRAME PLOTTING - POS")
+                        print(df_pos)
+                        sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'],x=df_pos[self.strat_columns[i]],ax=ax_curr,ls='dashed',lw=30,zorder=2)
+                        plt.ylabel('Percentage [%]')
+                else:
+                    print("BASE DATA")
+                    print(base_data)
+                    print("TYPE OF DATA")
+                    print(type(base_data))
+                    sns.boxplot(base_data['group-rct'],base_data[self.strat_columns[i]].astype('float'),zorder=1,ax=ax_curr)
+                    ax_curr.set_ylabel('Percentage [%]')
+                    if not new_data.empty:
+                        sns.boxplot(new_data['group-rct'],new_data[self.strat_columns[i]],ax=ax_curr,ls='dashed',lw=30,zorder=2)
+                        plt.ylim([new_data[self.strat_columns[i]].min(),new_data[self.strat_columns[i]].max()])
+                #plt.ylim([0,100])
+                plt.tight_layout()
 
             self.canvas = FigureCanvasTkAgg(fig, self.balanceframe)
             self.canvas.show()
-            self.canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+            self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
             self.toolbar = NavigationToolbar2TkAgg(self.canvas, self.balanceframe)
             self.toolbar.update()
-            self.canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-            
+            self.canvas._tkcanvas.pack(fill=tk.BOTH, expand=True)
 
         #except:
             #pass
-        tk.Button(self.balanceframe, text="Return to main window",command=lambda:self.mainframe.tkraise()).pack()
+        tk.Button(self.balanceframe, text="Return to main window",command=lambda:self.main_frame()).pack()
         tk.Button(self.balanceframe,text="Exit",command=tk.sys.exit).pack()
         
 
@@ -309,13 +331,12 @@ class gui(tk.Frame):
         
         self.firstframeexisting = tk.Frame(self.master)
         self.firstframeexisting.grid(row=0, column=0, sticky="nsew")
+        #self.firstframeexisting.pack(fill="both", expand=True)
 
         self.var_dict = {}
 
         self.statusText_ffe = tk.StringVar(self.firstframeexisting)
-        self.statusText_ffe.set("Press Browse button or enter CSV filename, "
-                        "It must end in _RCT"
-                        "then press the Go button")
+        self.statusText_ffe.set("")
 
         self.label = tk.Label(self.firstframeexisting, text="Please load the _RCT file that was already randomized: ")
         self.label.pack()
@@ -434,7 +455,7 @@ class gui(tk.Frame):
 
         self.secondframeexisting = tk.Frame(self.master)
         self.secondframeexisting.grid(row=0, column=0, sticky="nsew")
-
+        #fill="both", expand=True
         self.warnings=0
         self.var_dict = {}
 

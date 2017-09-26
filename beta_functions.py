@@ -21,8 +21,8 @@ def stratify(self):
     data_set.dropna(axis=1,inplace=True)#,how='all')
     data_set = data_set.apply(lambda x: x.astype(str).str.lower())
     print(selected_columns)
-    df = data_set.groupby(selected_columns).count().max(axis=1)
     data_set, age_copy, age_index = group_age(data_set)
+    df = data_set.groupby(selected_columns).count().max(axis=1)
     # Create exception here
     df = df.reset_index()
     df[df.columns[-1]]
@@ -49,8 +49,8 @@ def stratify(self):
     data_set['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_set.index]
 
     name=self.filename.rsplit(".")[0]+","+",".join(selected_columns)+'-'+str(self.sample_p)+'_RCT'+'.xlsx'
+    data_set.loc[age_index,'age'] = age_copy 
     data_set.to_excel(name)
-    data_set.loc[age_index,'age'] = age_copy
     return name
 
 
@@ -165,7 +165,7 @@ def update_stratification(self):
         data_new['group-rct'] = ["control" if x in ind_list else "intervention" for x in data_new.index]
     else:
         data_new['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_new.index]
-        
+
     name=self.filename1.rsplit(".")[0]+'.xlsx'
     self.total_data  = data_new.append(data_set)
     self.total_data['age'] = age_copy
