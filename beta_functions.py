@@ -180,13 +180,13 @@ def update_stratification(self):
         added_ns = 0 
         for rows in cycle(rows_delete):
             if df.loc[rows,'Size'] > 0:
-                if deleted_ns >= n - initial_n - df['Size'].sum():
+                if added_ns >= n - initial_n - df['Size'].sum():
                     break
                 else:
                     df.loc[rows,'Size'] += 1
-                    deleted_ns += 1
+                    added_ns += 1
                     print("lo que falta "+str(n - initial_n - df['Size'].sum()))
-                    print(deleted_ns)   
+                    print(added_ns)   
                     print(df)
 
 
@@ -199,32 +199,44 @@ def update_stratification(self):
     
     df = df.merge(label_pre)
     df['Missing'] = df['Size'] - df[label] # difference between existing and needed amounts
-    ind_list=np.array([]) #  Maybe shuffle data_new a little bit
-    diff = n - (data_set_copy['group-rct']==label).sum() 
+    ind_list = np.array([]) #  Maybe shuffle data_new a little bit
+    diff = n - (data_set_copy['group-rct']==label).sum() # desired number of individuals to fill out in the 'label' group. Same as n - initial_n, I hope.
     assigned = 0
     print("Missing")
     print(df['Missing'])
 
     data_new = data_temp[data_temp.date==todaysdate]
+    
     for index,comb in df.iterrows():
-        if assigned < diff:
+        if assigned >= n - initial_n:
+            break
+        else:
+            print("comb")
+            print(comb)
+            print("subset")
+            print(comb[:-4])
             df_tmp = data_new[(data_new[comb[:-4].index]==comb[:-4].values).all(axis=1)]  # Combinations of factors.
             print("df_tmp")
             print(df_tmp)
+            print(df_tmp.index)
             sz = len(df_tmp)
-            ss = min([sz,df['Missing'].loc[index],diff]) # What I have vs. what I am missing.
+            ss = min([sz,df['Missing'].loc[index],diff]) # What I have vs. what I am missing, only god knows why diff is here.
             print("missing")
             print(df['Missing'].loc[index])
             if ss > 0:
                 print(ss)
-                ind_list=np.append(ind_list,df_tmp.sample(n=ss).index.values)
-                #need to trim this at the end
+                ind_list = np.append(ind_list,df_tmp.sample(n=ss).index.values)
                 assigned += ss
             else:
                 pass
             print("assigned")
             print(assigned)
 
+    print("ind list pre")
+    print(ind_list)
+    print("len ind list pre")
+    print(len(set(ind_list)))
+    # Arreglando esa colita
     if assigned < diff:
         elegible = data_temp[(data_temp['group-rct']=='')&(data_temp['date']==todaysdate)]
         available = min(diff-assigned,len(data_temp[data_temp['date']==todaysdate]))
@@ -234,11 +246,30 @@ def update_stratification(self):
         else:
             ind_list_b = elegible.index.values
             ind_list   = np.append(ind_list,ind_list_b)
+
+    # I can just randomly delete indices from the lists
+    #ind_list = list(pd.DataFrame(ind_list).sample(n))
+    print("ind_list")
+    print(ind_list)
+    print("length")
+    print(len(ind_list))
+
+    print(pd.DataFrame(ind_list)[0].value_counts())
+
+    ind_list = map(int, ind_list)
     
     if label == 'control':
-        data_new['group-rct'] = ["control" if x in ind_list else "intervention" for x in data_new.index]
+        data_new.loc[ind_list,'group-rct'] = "control"
+        data_new.loc[set(data_new.index.values ) - set(ind_list),'group-rct'] = "intervention"
+        for x in ind_list:
+            if (x not in data_new.index):
+                print("malo")
+                print(x)
     else:
         data_new['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_new.index]
+
+    print("Value counts")
+    print(data_new['group-rct'].value_counts())
 
     name=self.filename1.rsplit(".")[0]+'.xlsx'
     self.total_data  = data_new.append(data_set)
