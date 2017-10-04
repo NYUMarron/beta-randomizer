@@ -250,8 +250,14 @@ class gui(tk.Frame):
         self.label.config(font=("Arial", 34))
         self.label.pack()
 
-        tk.Label(self.balanceframe, text="Control group size: ")
-        tk.Label(self.balanceframe, text="Intervention group size: ")
+        try:
+            tk.Label(self.balanceframe, text="Control group size: "+str(base_data['group-rct'].value_counts().loc['control'])+'('+str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['control'],2))+' %)').pack()
+            tk.Label(self.balanceframe, text="Intervention group size: "+str(base_data['group-rct'].value_counts().loc['intervention'])+ '('+ str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['intervention'],2))+' %)').pack()
+            if not new_data.empty:
+                tk.Label(self.balanceframe, text="New Control group size: "+str(new_data['group-rct'].value_counts().loc['control'])+ '('+ str(round(100*new_data['group-rct'].value_counts(normalize=True).loc['control'],2))+' %)').pack()
+                tk.Label(self.balanceframe, text="New Intervention group size: "+str(new_data['group-rct'].value_counts().loc['intervention'])+ '('+ str(round(100*new_data['group-rct'].value_counts(normalize=True).loc['intervention'],2))+' %)').pack()
+        except KeyError:
+            pass
 
         print("Balance frame initiated")
         i = 0
@@ -259,29 +265,31 @@ class gui(tk.Frame):
             print("Has length")
             fig, axes = plt.subplots(len(self.strat_columns),1) 
             #if hasattr(axes, '__iter__'):
-            try:
-                for row in axes:
-                    print("Tried here")
-                    ax_curr = axes[i]
-                    if self.strat_columns[i] != 'age':
-                        df = (100*(pd.crosstab(base_data['group-rct'],base_data[self.strat_columns[i]],normalize='columns')))
-                        df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
-                        ax_curr.axhline(y=self.sample_p,c="darkred",linewidth=1,zorder=3)
-                        sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr,zorder=1)
-                        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-                        ax_curr.set_ylabel('Percentage [%]')
-                        if not new_data.empty:
-                            df_pos = (100*(pd.crosstab(new_data['group-rct'],new_data[self.strat_columns[i]],normalize='columns')))
-                            df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
-                            sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr, ls='dashed', lw = 30, zorder=2)
-                    else:
-                        sns.boxplot(base_data['group-rct'],base_data[self.strat_columns[i]],ax=ax_curr,zorder=1)
-                        if not new_data.empty:
-                            sns.boxplot(new_data['group-rct'],new_data[self.strat_columns[i]],ax=ax_curr, ls='dashed', lw = 30, zorder=2)
-                            plt.ylim([new_data[self.strat_columns[i]].min(),new_data[self.strat_columns[i]].max()])
-                    #plt.ylim([0,100])
-                    plt.tight_layout()
-                    i+=1
+            #try:
+            for row in axes:
+                print("Tried here")
+                ax_curr = axes[i]
+                if self.strat_columns[i] != 'age':
+                    df = (100*(pd.crosstab(base_data['group-rct'],base_data[self.strat_columns[i]],normalize='columns')))
+                    df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
+                    ax_curr.axhline(y=self.sample_p,c="darkred",linewidth=1,zorder=3)
+                    sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr,zorder=1)
+                    plt.ylim([0,100])
+                    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+                    ax_curr.set_ylabel('Percentage [%]')
+                    if not new_data.empty:
+                        df_pos = (100*(pd.crosstab(new_data['group-rct'],new_data[self.strat_columns[i]],normalize='columns')))
+                        df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
+                        sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]],ax=ax_curr,ls='dashed',linewidth=2.5, facecolor=(1, 1, 1, 0),errcolor=".2", edgecolor=".2",palette="Set3")
+                else:
+                    sns.boxplot(base_data['group-rct'],base_data[self.strat_columns[i]].astype('float'),ax=ax_curr,zorder=1)
+                    if not new_data.empty:
+                        sns.boxplot(new_data['group-rct'],new_data[self.strat_columns[i]].astype('float'),ax=ax_curr, zorder=2)
+                        plt.ylim([new_data[self.strat_columns[i]].astype('float').min(),new_data[self.strat_columns[i]].astype('float').max()])
+                #plt.ylim([0,100])
+                plt.tight_layout()
+                i+=1
+            """
             except:
                 print("Tried there")
                 ax_curr = axes
@@ -292,27 +300,29 @@ class gui(tk.Frame):
                     print(df)
                     ax_curr.axhline(y=self.sample_p,c="darkred",linewidth=1,zorder=3)
                     sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr, zorder=1)
+                    plt.ylim([0,100])
                     ax_curr.set_ylabel('Percentage [%]')
                     if not new_data.empty:
                         df_pos = (100*(pd.crosstab(new_data['group-rct'], new_data[self.strat_columns[i]], normalize='columns')))
                         df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
                         print("DATA FRAME PLOTTING - POS")
                         print(df_pos)
-                        sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'],x=df_pos[self.strat_columns[i]],ax=ax_curr,ls='dashed',lw=30,zorder=2)
+                        sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'],x=df_pos[self.strat_columns[i]],ax=ax_curr,ls='dashed',lw=30,zorder=2,palette="Set3")
                         plt.ylabel('Percentage [%]')
                 else:
                     print("BASE DATA")
                     print(base_data)
                     print("TYPE OF DATA")
                     print(type(base_data))
-                    sns.boxplot(base_data['group-rct'],base_data[self.strat_columns[i]].astype('float'),zorder=1,ax=ax_curr)
+                    sns.boxplot(base_data['group-rct'],base_data[self.strat_columns[i]].astype('float'),ax=ax_curr,zorder=1)
                     ax_curr.set_ylabel('Percentage [%]')
                     if not new_data.empty:
-                        sns.boxplot(new_data['group-rct'],new_data[self.strat_columns[i]],ax=ax_curr,ls='dashed',lw=30,zorder=2)
+                        sns.boxplot(new_data['group-rct'],new_data[self.strat_columns[i]].astype('float'),ax=ax_curr,zorder=2)
                         plt.ylim([new_data[self.strat_columns[i]].min(),new_data[self.strat_columns[i]].max()])
                 #plt.ylim([0,100])
                 plt.tight_layout()
-
+            
+            """
             self.canvas = FigureCanvasTkAgg(fig, self.balanceframe)
             self.canvas.show()
             self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)

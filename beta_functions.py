@@ -3,6 +3,8 @@
 import pandas as pd
 import numpy as np
 import datetime as dt
+import random
+from itertools import cycle
 
 def stratify(self):
     """ 
@@ -69,8 +71,8 @@ def update_stratification(self):
     #data_set = pd.read_excel('Randomized/Originals Aug 22/NYU - Hamilton JIYA June 20,          AGE,RISK SCORE,Gender,Race-50_RCT.xlsx')
     #data_new = pd.read_excel('To randomize Aug 22/Hamilton County cases to be randomized 8-15-17.xlsx')
 
-    p = int(self.sample_p)/100.
-    selected_columns = self.strat_columns
+    p = int(self.sample_p)/100. #percentual proportion
+    selected_columns = self.strat_columns 
     print("p")
     print(self.sample_p)
     print("Existing data")
@@ -90,6 +92,7 @@ def update_stratification(self):
 
     data_new = self.data_new
     data_new.dropna(axis=0,inplace=True,how='all',subset=data_new.columns[2:])
+    data_new.dropna(axis=1,inplace=True,how='all')
     try:
         data_new = data_new.apply(lambda x: x.astype(str).str.lower())
     except UnicodeEncodeError:
@@ -102,12 +105,9 @@ def update_stratification(self):
     todaysdate = str(dt.datetime.today().date())
     data_new['date'] = todaysdate
 
-    #data_set.ix[:, data_set.columns != 'group-rct']
-    #data_new = pd.read_excel('test.xlsx')
     data_new['group-rct'] = ''
     data_temp = data_new.append(data_set.ix[:, :]) # there will be a problem with indexing, I can see it coming.
     data_temp, age_copy, age_index = group_age(data_temp)
-    #selected_columns = [u'Gender',u'Race']
 
     print(selected_columns)
 
@@ -117,20 +117,88 @@ def update_stratification(self):
     print("New data:")
     print(data_new.head())
 
-
     data_set = data_temp[data_temp.date!=todaysdate]
-    df = data_set.groupby(selected_columns).size().reset_index()
-    label = str((data_set_copy['group-rct'].value_counts(normalize=True)-.5).idxmin()) #that which is higher than something
+    df = data_set.groupby(selected_columns).size().reset_index() #Number of individuals in each group
+    label = str(((data_set_copy['group-rct'].value_counts(normalize=True)-p)).idxmin()) # los que se quedan bajitos
+    initial_n = data_set_copy['group-rct'].value_counts().loc[label]
 
     print("label")
     print(label)
 
+    print("CROSSTAB")
+    print(pd.crosstab(data_set['group-rct'],[pd.Series(data_set[cols]) for cols in selected_columns]))
 
-    label_pre = pd.crosstab(data_set['group-rct'],[pd.Series(data_set[cols]) for cols in selected_columns]).loc[label].reset_index()
-    n = np.ceil(p*len(data_temp)) # desired size
-    df['Size'] = np.ceil(n*(df[df.columns[-1]]/len(data_temp)).values)
+    label_pre = pd.crosstab(data_set['group-rct'],[pd.Series(data_set[cols]) for cols in selected_columns]).loc[label].reset_index() 
+
+    # desired size
+    if label=='control':
+        n = np.ceil(p*len(data_temp)) 
+    elif label=='intervention':
+        n = np.ceil((1-p)*len(data_temp)) 
+    else:
+        print("ERROOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOR")
+    df['Size'] = np.ceil(n*(df[df.columns[-1]]/len(data_temp)).values) # number of individuals that would make up for an even contribution to the groups
+
+    # Trying to get a more exact sample size.
+    print("ESTE VALOR")
+    print(n-df['Size'].sum())
+
+    print('Grupos share')
+    print(data_set_copy['group-rct'].value_counts(normalize=True))
+    print(data_set_copy['group-rct'].value_counts())
+
+    print("n: "+str(n))
+    print("p: "+str(p))
+    print("initial_n: "+str(initial_n))
+    print("label: "+str(label))
+    print("Actual assignation: "+str(df['Size'].sum()))
+    
+    rows_delete = range(0,len(df))
+    random.shuffle(rows_delete)
+
+    print("DF BEFORE")
+    print(df)
+
+    previous_assignation = df['Size'].sum()
+
+
+    if n - initial_n < df['Size'].sum():
+        deleted_ns = 0  
+        for rows in cycle(rows_delete):
+            if df.loc[rows,'Size'] > 0:
+                #((1/p)*df['Size'].sum())-n:
+                if deleted_ns >= n - initial_n - df['Size'].sum() :
+                    break
+                else:
+                    df.loc[rows,'Size'] -= 1
+                    deleted_ns += 1
+                    print("lo que falta "+str(n - initial_n - df['Size'].sum()))
+                    print(deleted_ns)   
+                    print(df)
+    elif n - initial_n > df['Size'].sum():
+        print("BUUUUUUUUUUUU - I would be surprised if this were not impossible. ")
+        added_ns = 0 
+        for rows in cycle(rows_delete):
+            if df.loc[rows,'Size'] > 0:
+                if deleted_ns >= n - initial_n - df['Size'].sum():
+                    break
+                else:
+                    df.loc[rows,'Size'] += 1
+                    deleted_ns += 1
+                    print("lo que falta "+str(n - initial_n - df['Size'].sum()))
+                    print(deleted_ns)   
+                    print(df)
+
+
+
+    print("DF AFTER")
+    print(df)
+
+    print("Current assignation - after")
+    print(df['Size'].sum())
+    
     df = df.merge(label_pre)
-    df['Missing'] = df['Size'] - df[label] # parar la llenadera cuando se cumpla la proporcion deseada!
+    df['Missing'] = df['Size'] - df[label] # difference between existing and needed amounts
     ind_list=np.array([]) #  Maybe shuffle data_new a little bit
     diff = n - (data_set_copy['group-rct']==label).sum() 
     assigned = 0
@@ -158,8 +226,14 @@ def update_stratification(self):
             print(assigned)
 
     if assigned < diff:
-        ind_list_b = data_temp[(data_temp['group-rct']=='')&(data_temp['date']==todaysdate)].sample(n=min(diff-assigned,len(data_temp[data_temp['date']==todaysdate]))).index.values
-        ind_list   = np.append(ind_list,ind_list_b)
+        elegible = data_temp[(data_temp['group-rct']=='')&(data_temp['date']==todaysdate)]
+        available = min(diff-assigned,len(data_temp[data_temp['date']==todaysdate]))
+        if len(elegible) >= available:
+            ind_list_b = elegible.sample(available).index.values
+            ind_list   = np.append(ind_list,ind_list_b)
+        else:
+            ind_list_b = elegible.index.values
+            ind_list   = np.append(ind_list,ind_list_b)
     
     if label == 'control':
         data_new['group-rct'] = ["control" if x in ind_list else "intervention" for x in data_new.index]
