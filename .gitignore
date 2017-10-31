@@ -2,4 +2,6 @@
 *.txt
 *.xlsx
 *.xls
-
+*.spec
+*.pyc
+*.zip
