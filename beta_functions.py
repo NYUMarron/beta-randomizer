@@ -225,6 +225,10 @@ def update_stratification(self):
             print(df['Missing'].loc[index])
             if ss > 0:
                 print(ss)
+                print("AQUI df tmp")
+                print(df_tmp)
+                print("AQUI ss")
+                print(ss)
                 ind_list = np.append(ind_list,df_tmp.sample(n=ss).index.values)
                 assigned += ss
             else:

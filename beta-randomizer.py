@@ -26,6 +26,13 @@ from Tkinter import StringVar
 
 sns.set_style("whitegrid")
 
+def standardize_columns(data):
+    for cols in data.columns:
+        if not np.issubdtype(data[cols].dtype, np.number):
+            data[cols] = data[cols].str.strip()
+            data[cols] = data[cols].map(lambda x: x.replace('-', ''))
+    return data
+
 class gui(tk.Frame):
 
     def __init__(self, master, *args, **kwargs):
@@ -43,7 +50,6 @@ class gui(tk.Frame):
 
     def main_frame(self):
         print("Main frame initialized")
-
 
         self.data, self.rct, self.data_rct, self.data_new, self.total_data = pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([])
         self.filename, self.filename1, self.filename2 = "","",""
@@ -118,9 +124,9 @@ class gui(tk.Frame):
             data = data.apply(lambda x: x.astype(str).str.lower()) # replace all special characters.
             data.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True)
             data.columns = map(str, data.columns)
-            data.columns = map(str.lower, data.columns)
-            data.columns = data.columns.str.replace(' ','')
-
+            data.columns = [''.join(str.lower(e) for e in string if e.isalnum()) for string in data.columns]
+            data.apply(lambda x: x.astype(str).str.lower())
+            data = standardize_columns(data) #make sure values have no spaces
             self.data = data
             
             print(self.data.head())
@@ -289,40 +295,7 @@ class gui(tk.Frame):
                 #plt.ylim([0,100])
                 plt.tight_layout()
                 i+=1
-            """
-            except:
-                print("Tried there")
-                ax_curr = axes
-                if self.strat_columns[i] != 'age':
-                    df = (100*(pd.crosstab(base_data['group-rct'], base_data[self.strat_columns[i]], normalize='columns')))
-                    df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
-                    print("DATA FRAME PLOTTING - PRE")
-                    print(df)
-                    ax_curr.axhline(y=self.sample_p,c="darkred",linewidth=1,zorder=3)
-                    sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr, zorder=1)
-                    plt.ylim([0,100])
-                    ax_curr.set_ylabel('Percentage [%]')
-                    if not new_data.empty:
-                        df_pos = (100*(pd.crosstab(new_data['group-rct'], new_data[self.strat_columns[i]], normalize='columns')))
-                        df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
-                        print("DATA FRAME PLOTTING - POS")
-                        print(df_pos)
-                        sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'],x=df_pos[self.strat_columns[i]],ax=ax_curr,ls='dashed',lw=30,zorder=2,palette="Set3")
-                        plt.ylabel('Percentage [%]')
-                else:
-                    print("BASE DATA")
-                    print(base_data)
-                    print("TYPE OF DATA")
-                    print(type(base_data))
-                    sns.boxplot(base_data['group-rct'],base_data[self.strat_columns[i]].astype('float'),ax=ax_curr,zorder=1)
-                    ax_curr.set_ylabel('Percentage [%]')
-                    if not new_data.empty:
-                        sns.boxplot(new_data['group-rct'],new_data[self.strat_columns[i]].astype('float'),ax=ax_curr,zorder=2)
-                        plt.ylim([new_data[self.strat_columns[i]].min(),new_data[self.strat_columns[i]].max()])
-                #plt.ylim([0,100])
-                plt.tight_layout()
-            
-            """
+
             self.canvas = FigureCanvasTkAgg(fig, self.balanceframe)
             self.canvas.show()
             self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
@@ -405,15 +378,22 @@ class gui(tk.Frame):
                 # delete empty columns
                 data_rct.dropna(axis=1,how='all',inplace=True)
                 data_rct.dropna(axis=0,how='all',inplace=True)
-                #data_rct.columns = map(str.lower, map(str, data_rct.columns)).str.replace(' ','')
 
                 data_rct.columns = map(str, data_rct.columns)
-                data_rct.columns = map(str.lower, data_rct.columns)
-                data_rct.columns=data_rct.columns.str.replace(' ','')
+                available_columns = []
+                try:
+                    available_columns = list(set(data_rct.columns.values) - set(['group-rct']))
+                except:
+                    pass
+                
+                data_rct[available_columns].columns = [''.join(str.lower(e) for e in string if e.isalnum()) for string in available_columns] #remove all special characters
 
                 # remove upper case.
+                
                 try:
                     data_rct = data_rct.apply(lambda x: x.astype(str).str.lower())
+                    data_rct = standardize_columns(data_rct)
+                    
                 except UnicodeEncodeError:
                 # replace all special characters.
                     data_rct.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True, inplace=True)
@@ -425,6 +405,8 @@ class gui(tk.Frame):
                 data_new.dropna(axis=0,how='all',inplace=True,subset=data_new.columns[2:])
                 # remove upper case.
                 data_new = data_new.apply(lambda x: x.astype(str).str.lower())
+                data_new = standardize_columns(data_new)
+                data_new.columns = data_new.columns.map(lambda x: x.replace('-', ''))
                 # replace all special characters.
                 data_new.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True, inplace=True)
                 
@@ -453,7 +435,8 @@ class gui(tk.Frame):
                             self.second_frame_existing()                
                     else:
                         print("Message should appear")
-                        self.statusText_ffe.set("Files must have the same structure (columns).")
+                        available_columns = list(set(data_rct.columns.values) - set(['group-rct']))
+                        self.statusText_ffe.set("Files must have the same structure (columns). \n Previous column names: "+ str([x.encode('utf-8') for x in data_rct[available_columns].columns.values]) +"\n New column names: "+str([x.encode('utf-8') for x in data_new.columns.values]))
                         self.message_ffe.configure(fg="red")
                 else:                    
                     self.statusText_ffe.set("The file should have been generated by this own program and thus have a Group-RCT column.")
