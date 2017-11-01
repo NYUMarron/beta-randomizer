@@ -300,9 +300,9 @@ class gui(tk.Frame):
             self.canvas.show()
             self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-            self.toolbar = NavigationToolbar2TkAgg(self.canvas, self.balanceframe)
-            self.toolbar.update()
-            self.canvas._tkcanvas.pack(fill=tk.BOTH, expand=True)
+            #self.toolbar = NavigationToolbar2TkAgg(self.canvas, self.balanceframe)
+            #self.toolbar.update()
+            #self.canvas._tkcanvas.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
         #except:
             #pass
@@ -385,18 +385,17 @@ class gui(tk.Frame):
                     available_columns = list(set(data_rct.columns.values) - set(['group-rct']))
                 except:
                     pass
-                
                 data_rct[available_columns].columns = [''.join(str.lower(e) for e in string if e.isalnum()) for string in available_columns] #remove all special characters
 
                 # remove upper case.
-                
                 try:
                     data_rct = data_rct.apply(lambda x: x.astype(str).str.lower())
                     data_rct = standardize_columns(data_rct)
                     
                 except UnicodeEncodeError:
-                # replace all special characters.
+                    # replace all special characters.
                     data_rct.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True, inplace=True)
+
                 self.data_rct = data_rct
 
                 data_new = pd.read_excel(self.filename2)
@@ -406,9 +405,11 @@ class gui(tk.Frame):
                 # remove upper case.
                 data_new = data_new.apply(lambda x: x.astype(str).str.lower())
                 data_new = standardize_columns(data_new)
-                data_new.columns = data_new.columns.map(lambda x: x.replace('-', ''))
+
+                data_new.columns = [''.join(str.lower(str(e)) for e in string if e.isalnum()) for string in data_new.columns]
                 # replace all special characters.
                 data_new.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True, inplace=True)
+                
                 
                 data_new.columns = map(str, data_new.columns)
                 data_new.columns = map(str.lower, data_new.columns)
