@@ -13,12 +13,13 @@ import tkFileDialog
 import tkMessageBox
 import pandas as pd 
 import datetime as dt
+import tkMessageBox
 from beta_functions import *
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
 import seaborn as sns
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 #from matplotlib.figure import Figure
 
 from Tkinter import BooleanVar
@@ -32,6 +33,9 @@ def standardize_columns(data):
             data[cols] = data[cols].str.strip()
             data[cols] = data[cols].map(lambda x: x.replace('-', ''))
     return data
+
+def clear_variables(self):
+    self.strat_columns = []
 
 class gui(tk.Frame):
 
@@ -55,7 +59,7 @@ class gui(tk.Frame):
         self.filename, self.filename1, self.filename2 = "","",""
         self.prefix = ''
         self.strat_columns = []
-        self.sample_p = 0.
+        self.sample_p = None
         self.raise_vble_warning = False
 
         self.mainframe = tk.Frame(self.master,width=300, height=350)
@@ -179,57 +183,96 @@ class gui(tk.Frame):
 
     def button_stratify_callback(self):
 
-        for cols,vs in self.var_dict.iteritems():
-            if vs.get():
-                if "dob" in cols.lower():
-                    temp_dates = []
-                    for dob in self.data[cols]:
-                        try:
-                            birth_year = int(dt.datetime.strptime(dob,'%d/%M/%y').year)
-                            if birth_year > 2000:
-                                birth_year -= 100
-                            age = dt.datetime.now().year - birth_year
-                        except ValueError:
-                            pass
-                    del(self.data[cols])
-                    self.data["Age"] = age
-                    self.strat_columns.append(cols)
-                elif (cols == "PO") or (cols=="Judge"):
-                    self.controller.raise_vble_warning = True
-                    if self.warnings>0:    
+        def set_stratifying_variables(self):
+            for cols,vs in self.var_dict.iteritems():
+                if vs.get():
+                    if "dob" in cols.lower():
+                        temp_dates = []
+                        for dob in self.data[cols]:
+                            try:
+                                birth_year = int(dt.datetime.strptime(dob,'%d/%M/%y').year)
+                                if birth_year > 2000:
+                                    birth_year -= 100
+                                age = dt.datetime.now().year - birth_year
+                            except ValueError:
+                                pass
+                        del(self.data[cols])
+                        self.data["Age"] = age
                         self.strat_columns.append(cols)
-                else:
-                    self.strat_columns.append(cols)
+                    elif (cols == "PO") or (cols=="Judge"):
+                        self.controller.raise_vble_warning = True
+                        if self.warnings>0:    
+                            self.strat_columns.append(cols)
+                    else:
+                        self.strat_columns.append(cols)
+
+        clear_variables(self)
+        set_stratifying_variables(self)
         
         if self.raise_vble_warning and (self.warnings<1):
-            self.warning_1(self.var_dict,self.second_frame_entry,self.statusText,self.message)
+            self.warning_1(self)
         else:
-            #try:
-            self.sample_p = int(self.second_frame_entry.get())
-            n = len(self.data)
-            min_n = len(self.strat_columns)*2
+            try:
+                self.sample_p = int(self.second_frame_entry.get())
+                n = len(self.data)
+                min_n = len(self.strat_columns)*2
+                if 0 <= self.sample_p <= 100:
+                    print(self.strat_columns)
+                    prefix = stratify(self) 
+                    if prefix is None:
+                        self.warning_errorrandomsample()
+                    else:
+                        self.statusText.set("Output is in file {}".format(prefix))
+                        self.message.configure(fg="black")
+                else:
+                    self.warning_wrongnumber()
+            except ValueError:
+                self.warning_wrongnumber()
+
+            if not self.strat_columns:
+                self.empty_strat_variables()
 
             if min_n >= n:
-                self.statusText.set("Too many columns selected for the sample size. Try selecting less columns for stratification.")
-                self.message.configure(fg="red")
-            
-            if 0 <= self.sample_p <= 100:
-                print(self.strat_columns)
-                prefix = stratify(self) 
-                if prefix is None:
-                    self.statusText.set("Error creating random sample.")
-                    self.message.configure(fg="red")
-                else:
-                    self.statusText.set("Output is in file {}".format(prefix))
-                    # Consider adding a timestamp.
-                    self.message.configure(fg="black")
-            else: 
-                self.statusText.set("Please enter a number between 0 and 100")
-                self.message.configure(fg="red")
+                self.warning_toomanycolumns()
+        
+
+                
             #except ValueError:
             #    statusText.set("Please enter a whole number.")
             #    message.configure(fg="red")
         
+
+    def warning_1(self):
+        tkMessageBox.showinfo("Warning","We suggest not to randomize based on parole officers or judges.")
+        self.warnings += 1
+        print("At prompt function: "+str(self.warnings))
+        self.statusText.set("Select columns.")
+        self.message.configure(fg="Black")
+        self.second_frame.tkraise()
+
+    def warning_errorrandomsample(self):
+        tkMessageBox.showinfo("Error","Error creating random sample.")
+        print("At prompt function: "+str(self.warnings))
+        self.message.configure(fg="Black")
+        self.second_frame()
+
+    def warning_toomanycolumns(self):
+        tkMessageBox.showinfo("Error","Too many columns to randomize.")
+        print("At prompt function: "+str(self.warnings))
+        self.message.configure(fg="Black")
+        self.second_frame()
+
+    def warning_wrongnumber(self):
+        tkMessageBox.showinfo("Error","Please enter a number between 0 and 100.")
+        print("At prompt function: "+str(self.warnings))
+        self.message.configure(fg="Black")
+        self.second_frame()
+
+    def empty_strat_variables(self):
+        tkMessageBox.showinfo("Error","Please enter at least one stratifying variable.")
+        print("At prompt function: "+str(self.warnings))
+        self.message.configure(fg="Black")
+        self.second_frame()
 
     def button_balance_callback(self):
         try:
@@ -238,14 +281,6 @@ class gui(tk.Frame):
         except:
             self.statusText.set("It is first necessary to create a randomized sample.")
             self.message.configure(fg="red")
-
-    def warning_1(self):
-        self.tkMessageBox.showinfo("Warning","We suggest not to randomize based on parole officers or judges.")
-        self.warnings += 1
-        print("At prompt function: "+str(self.warnings))
-        self.statusText.set("Select columns.")
-        self.message.configure(fg="Black")
-        self.button_stratify_callback(self)
 
     def balance_frame(self,base_data,new_data=pd.DataFrame([])):
         self.balanceframe = tk.Frame(self.master,width=666, height=950)
@@ -270,11 +305,33 @@ class gui(tk.Frame):
         if len(self.strat_columns)>0:
             print("Has length")
             fig, axes = plt.subplots(len(self.strat_columns),1) 
-            #if hasattr(axes, '__iter__'):
-            #try:
-            for row in axes:
-                print("Tried here")
-                ax_curr = axes[i]
+            print(hasattr(axes, '__iter__'))
+            if hasattr(axes, '__iter__'):
+                for row in axes:
+                    print("Tried here")
+                    ax_curr = axes[i]
+                    if self.strat_columns[i] != 'age':
+                        df = (100*(pd.crosstab(base_data['group-rct'],base_data[self.strat_columns[i]],normalize='columns')))
+                        df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
+                        ax_curr.axhline(y=self.sample_p,c="darkred",linewidth=1,zorder=3)
+                        sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr,zorder=1)
+                        plt.ylim([0,100])
+                        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+                        ax_curr.set_ylabel('Percentage [%]')
+                        if not new_data.empty:
+                            df_pos = (100*(pd.crosstab(new_data['group-rct'],new_data[self.strat_columns[i]],normalize='columns')))
+                            df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
+                            sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]],ax=ax_curr,ls='dashed',linewidth=2.5, facecolor=(1, 1, 1, 0),errcolor=".2", edgecolor=".2",palette="Set3")
+                    else:
+                        sns.boxplot(base_data['group-rct'],base_data[self.strat_columns[i]].astype('float'),ax=ax_curr,zorder=1)
+                        if not new_data.empty:
+                            sns.boxplot(new_data['group-rct'],new_data[self.strat_columns[i]].astype('float'),ax=ax_curr, zorder=2)
+                            plt.ylim([new_data[self.strat_columns[i]].astype('float').min(),new_data[self.strat_columns[i]].astype('float').max()])
+                    #plt.ylim([0,100])
+                    plt.tight_layout()
+                    i+=1
+            else:
+                ax_curr = axes
                 if self.strat_columns[i] != 'age':
                     df = (100*(pd.crosstab(base_data['group-rct'],base_data[self.strat_columns[i]],normalize='columns')))
                     df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
@@ -299,14 +356,7 @@ class gui(tk.Frame):
             self.canvas = FigureCanvasTkAgg(fig, self.balanceframe)
             self.canvas.show()
             self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-
-            #self.toolbar = NavigationToolbar2TkAgg(self.canvas, self.balanceframe)
-            #self.toolbar.update()
-            #self.canvas._tkcanvas.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-
-        #except:
-            #pass
-        tk.Button(self.balanceframe, text="Return to main window",command=lambda:self.main_frame()).pack()
+        tk.Button(self.balanceframe, text="Return to main window",command=lambda:self.mainframe.tkraise()).pack()
         tk.Button(self.balanceframe,text="Exit",command=tk.sys.exit).pack()
         
 
@@ -333,12 +383,10 @@ class gui(tk.Frame):
         self.entry2.pack()
 
         tk.Frame(self.firstframeexisting, height=2, bd=1, relief=tk.SUNKEN).pack(fill=tk.X, padx=5, pady=5)
-
         tk.Button(self.firstframeexisting,text="Browse",command=lambda: self.button_browse_callback_2()).pack()    
         tk.Button(self.firstframeexisting, text="Go", command=lambda: self.button_go_callback_2()).pack()
         tk.Button(self.firstframeexisting, text="Return", command=lambda: self.mainframe.tkraise()).pack()
         tk.Button(self.firstframeexisting,text="Exit",command=tk.sys.exit).pack()    
-
         tk.Frame(self.firstframeexisting, height=2, bd=1, relief=tk.SUNKEN).pack(fill=tk.X, padx=5, pady=5)
 
         self.message_ffe = tk.Label(self.firstframeexisting, textvariable=self.statusText_ffe)
@@ -410,7 +458,6 @@ class gui(tk.Frame):
                 # replace all special characters.
                 data_new.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True, inplace=True)
                 
-                
                 data_new.columns = map(str, data_new.columns)
                 data_new.columns = map(str.lower, data_new.columns)
                 data_new.columns = data_new.columns.str.replace(' ','')
@@ -449,7 +496,6 @@ class gui(tk.Frame):
 
         self.secondframeexisting = tk.Frame(self.master)
         self.secondframeexisting.grid(row=0, column=0, sticky="nsew")
-        #fill="both", expand=True
         self.warnings=0
         self.var_dict = {}
 
@@ -468,14 +514,6 @@ class gui(tk.Frame):
         self.message_sf = tk.Label(self.secondframeexisting, textvariable=self.statusText_up)
         self.message_sf.configure(fg="black")
         self.message_sf.pack() 
-
-    def warning_1(self):
-        tkMessageBox.showinfo("Warning","We suggest not to randomize based on parole officers or judges.")
-        self.warnings += 1
-        print("At prompt function: "+str(self.warnings))
-        self.statusText.set("Select columns.")
-        self.message.configure(fg="Black")
-        self.button_stratify_callback(self)
 
         
 if __name__ == "__main__":

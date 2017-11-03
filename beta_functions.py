@@ -27,15 +27,25 @@ def stratify(self):
     df = data_set.groupby(selected_columns).count().max(axis=1)
     # Create exception here
     df = df.reset_index()
-    df[df.columns[-1]]
+    #df[df.columns[-1]]
 
     n = np.ceil((self.sample_p/100.)*len(data_set))
     print(n)
     print("df")
     print(df)
 
-    # How to ensure sample size when rounding like this.
+    # - How to ensure sample size when rounding like this.
     df['Size'] = np.ceil(n*(df[df.columns[-1]]/len(data_set)).values)
+
+    # - Ensure that rounding of subgroups does not mess up total balance
+    rows_delete = range(0,len(df))
+    random.shuffle(rows_delete)
+
+    for rows in cycle(rows_delete):
+        if df['Size'].sum() <= n:
+            break
+        else:
+            df.loc[rows,'Size'] -= 1
 
     print("df size")
     print(df)
@@ -45,12 +55,12 @@ def stratify(self):
     ind_list=np.array([])
     for index,comb in df.iterrows():
         df_tmp = data_set[(data_set[comb[:-2].index]==comb[:-2].values).all(axis=1)]
-        ind_list=np.append(ind_list,df_tmp.sample(n=df['Size'].iloc[i]).index.values)
-        i+=1
+        ind_list = np.append(ind_list,df_tmp.sample(n=df['Size'].iloc[i]).index.values)
+        i += 1
 
     data_set['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_set.index]
 
-    name=self.filename.rsplit(".")[0]+","+",".join(selected_columns)+'-'+str(self.sample_p)+'_RCT'+'.xlsx'
+    name = self.filename.rsplit(".")[0]+","+",".join(selected_columns)+'-'+str(self.sample_p)+'_RCT'+'.xlsx'
     data_set.loc[age_index,'age'] = age_copy 
     data_set.to_excel(name)
     return name
@@ -224,10 +234,6 @@ def update_stratification(self):
             print("missing")
             print(df['Missing'].loc[index])
             if ss > 0:
-                print(ss)
-                print("AQUI df tmp")
-                print(df_tmp)
-                print("AQUI ss")
                 print(ss)
                 ind_list = np.append(ind_list,df_tmp.sample(n=ss).index.values)
                 assigned += ss
