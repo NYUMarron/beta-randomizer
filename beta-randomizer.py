@@ -213,28 +213,29 @@ class gui(tk.Frame):
             self.warning_1(self)
         else:
             try:
-                self.sample_p = int(self.second_frame_entry.get())
-                n = len(self.data)
-                min_n = len(self.strat_columns)*2
-                if 0 <= self.sample_p <= 100:
-                    print(self.strat_columns)
-                    prefix = stratify(self) 
-                    if prefix is None:
-                        self.warning_errorrandomsample()
-                    else:
-                        self.statusText.set("Output is in file {}".format(prefix))
-                        self.message.configure(fg="black")
+                if not self.strat_columns:
+                    self.empty_strat_variables()
                 else:
-                    self.warning_wrongnumber()
+                    self.sample_p = int(self.second_frame_entry.get())
+                    n = len(self.data)
+                    min_n = len(self.strat_columns)*2
+                    if 0 <= self.sample_p <= 100:
+                        print(self.strat_columns)
+                        if min_n >= n:
+                            self.warning_toomanycolumns()
+                        else:
+                            prefix = stratify(self) 
+                            if prefix is None:
+                                self.warning_errorrandomsample()
+                            else:
+                                self.statusText.set("Output is in file {}".format(prefix))
+                                self.message.configure(fg="black")
+                    else:
+                        self.warning_wrongnumber()
+
             except ValueError:
                 self.warning_wrongnumber()
 
-            if not self.strat_columns:
-                self.empty_strat_variables()
-
-            if min_n >= n:
-                self.warning_toomanycolumns()
-        
 
                 
             #except ValueError:
@@ -248,7 +249,8 @@ class gui(tk.Frame):
         print("At prompt function: "+str(self.warnings))
         self.statusText.set("Select columns.")
         self.message.configure(fg="Black")
-        self.second_frame.tkraise()
+        #self.second_frame.tkraise()
+        self.second_frame()
 
     def warning_errorrandomsample(self):
         tkMessageBox.showinfo("Error","Error creating random sample.")
@@ -430,10 +432,12 @@ class gui(tk.Frame):
                 data_rct.columns = map(str, data_rct.columns)
                 available_columns = []
                 try:
-                    available_columns = list(set(data_rct.columns.values) - set(['group-rct']))
+                    available_columns = list(set(data_rct.columns.values) - set(['group-rct','date']))
                 except:
                     pass
-                data_rct[available_columns].columns = [''.join(str.lower(e) for e in string if e.isalnum()) for string in available_columns] #remove all special characters
+
+                print(data_rct.rename(columns={string:''.join(str.lower(e) for e in string if e.isalnum()) for string in available_columns}))
+                data_rct = data_rct.rename(columns={string:''.join(str.lower(e) for e in string if e.isalnum()) for string in available_columns}) #remove all special characters
 
                 # remove upper case.
                 try:
@@ -445,6 +449,7 @@ class gui(tk.Frame):
                     data_rct.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True, inplace=True)
 
                 self.data_rct = data_rct
+                print(data_rct)
 
                 data_new = pd.read_excel(self.filename2)
                 # delete empty columns
