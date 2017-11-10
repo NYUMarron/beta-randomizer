@@ -24,6 +24,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from Tkinter import BooleanVar
 from Tkinter import StringVar
+from datetime import datetime
 
 sns.set_style("whitegrid")
 
@@ -53,13 +54,13 @@ class gui(tk.Frame):
         self.mainframe.tkraise()
 
     def main_frame(self):
-        print("Main frame initialized")
+        #print("Main frame initialized")
 
         self.data, self.rct, self.data_rct, self.data_new, self.total_data = pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([]), pd.DataFrame([])
         self.filename, self.filename1, self.filename2 = "","",""
         self.prefix = ''
         self.strat_columns = []
-        self.sample_p = None
+        self.sample_p = 0
         self.raise_vble_warning = False
 
         self.mainframe = tk.Frame(self.master,width=300, height=350)
@@ -111,7 +112,8 @@ class gui(tk.Frame):
     def button_go_callback(self):
 
         """ what to do when the "Go" button is pressed """
-        print("Go callback")
+        
+        #print("Go callback")
         input_file = self.first_frame_entry.get()
 
         if input_file.rsplit(".")[-1] not in ["csv","xlsx","xls"] :
@@ -133,7 +135,7 @@ class gui(tk.Frame):
             data = standardize_columns(data) #make sure values have no spaces
             self.data = data
             
-            print(self.data.head())
+            #print(self.data.head())
             #self.secondframe.tkraise()
             self.second_frame()
 
@@ -143,7 +145,8 @@ class gui(tk.Frame):
 
     def second_frame(self):
 
-        print("Second frame initialized")
+        
+        #print("Second frame initialized")
 
         self.secondframe = tk.Frame(self.master,width=300, height=350)
         self.secondframe.grid(row=0, column=0, sticky="nsew")
@@ -161,7 +164,7 @@ class gui(tk.Frame):
         self.second_frame_entry.pack()
         
         for col in self.data.columns:
-            print("something is happening")
+            #print("something is happening")
             if "ccis" in col:
                 pass
             elif ("name" in col) or ("Name" in col) or ("Surname" in col):
@@ -187,18 +190,29 @@ class gui(tk.Frame):
             for cols,vs in self.var_dict.iteritems():
                 if vs.get():
                     if "dob" in cols.lower():
-                        temp_dates = []
+                        try:
+                            self.data[cols] = pd.to_datetime(self.data[cols])
+                        except:
+                            pass
+                        age_list = []
                         for dob in self.data[cols]:
                             try:
-                                birth_year = int(dt.datetime.strptime(dob,'%d/%M/%y').year)
+                                if isinstance(dob,datetime):
+                                    birth_year = dob.year
+                                else:
+                                    try:
+                                        birth_year = int(dt.datetime.strptime(dob,'%d/%M/%y').year)
+                                    except ValueError:
+                                        pass
                                 if birth_year > 2000:
                                     birth_year -= 100
-                                age = dt.datetime.now().year - birth_year
+                                age_list.append(dt.datetime.now().year - birth_year)
                             except ValueError:
                                 pass
                         del(self.data[cols])
-                        self.data["Age"] = age
-                        self.strat_columns.append(cols)
+                        # I SHOULD HAVE AN ERROR MESSAGE HERE
+                        self.data["age"] = age_list
+                        self.strat_columns.append("age")
                     elif (cols == "PO") or (cols=="Judge"):
                         self.controller.raise_vble_warning = True
                         if self.warnings>0:    
@@ -219,8 +233,9 @@ class gui(tk.Frame):
                     self.sample_p = int(self.second_frame_entry.get())
                     n = len(self.data)
                     min_n = len(self.strat_columns)*2
+                    print(self.sample_p)
                     if 0 <= self.sample_p <= 100:
-                        print(self.strat_columns)
+                        #print(self.strat_columns)
                         if min_n >= n:
                             self.warning_toomanycolumns()
                         else:
@@ -246,7 +261,7 @@ class gui(tk.Frame):
     def warning_1(self):
         tkMessageBox.showinfo("Warning","We suggest not to randomize based on parole officers or judges.")
         self.warnings += 1
-        print("At prompt function: "+str(self.warnings))
+        #print("At prompt function: "+str(self.warnings))
         self.statusText.set("Select columns.")
         self.message.configure(fg="Black")
         #self.second_frame.tkraise()
@@ -254,25 +269,25 @@ class gui(tk.Frame):
 
     def warning_errorrandomsample(self):
         tkMessageBox.showinfo("Error","Error creating random sample.")
-        print("At prompt function: "+str(self.warnings))
+        #print("At prompt function: "+str(self.warnings))
         self.message.configure(fg="Black")
         self.second_frame()
 
     def warning_toomanycolumns(self):
         tkMessageBox.showinfo("Error","Too many columns to randomize.")
-        print("At prompt function: "+str(self.warnings))
+        #print("At prompt function: "+str(self.warnings))
         self.message.configure(fg="Black")
         self.second_frame()
 
     def warning_wrongnumber(self):
         tkMessageBox.showinfo("Error","Please enter a number between 0 and 100.")
-        print("At prompt function: "+str(self.warnings))
+        #print("At prompt function: "+str(self.warnings))
         self.message.configure(fg="Black")
         self.second_frame()
 
     def empty_strat_variables(self):
         tkMessageBox.showinfo("Error","Please enter at least one stratifying variable.")
-        print("At prompt function: "+str(self.warnings))
+        #print("At prompt function: "+str(self.warnings))
         self.message.configure(fg="Black")
         self.second_frame()
 
@@ -302,13 +317,14 @@ class gui(tk.Frame):
         except KeyError:
             pass
 
-        print("Balance frame initiated")
-        i = 0
+        #print("Balance frame initiated")
+        
         if len(self.strat_columns)>0:
             print("Has length")
             fig, axes = plt.subplots(len(self.strat_columns),1) 
             print(hasattr(axes, '__iter__'))
             if hasattr(axes, '__iter__'):
+                i = 0
                 for row in axes:
                     print("Tried here")
                     ax_curr = axes[i]
@@ -323,7 +339,8 @@ class gui(tk.Frame):
                         if not new_data.empty:
                             df_pos = (100*(pd.crosstab(new_data['group-rct'],new_data[self.strat_columns[i]],normalize='columns')))
                             df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
-                            sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]],ax=ax_curr,ls='dashed',linewidth=2.5, facecolor=(1, 1, 1, 0),errcolor=".2", edgecolor=".2",palette="Set3")
+                            sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr, ls='dashed',
+                                linewidth=2.5, facecolor=(1, 1, 1, 0), errcolor=".2", edgecolor=".2", palette="Set3")
                     else:
                         sns.boxplot(base_data['group-rct'],base_data[self.strat_columns[i]].astype('float'),ax=ax_curr,zorder=1)
                         if not new_data.empty:
@@ -345,7 +362,8 @@ class gui(tk.Frame):
                     if not new_data.empty:
                         df_pos = (100*(pd.crosstab(new_data['group-rct'],new_data[self.strat_columns[i]],normalize='columns')))
                         df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
-                        sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]],ax=ax_curr,ls='dashed',linewidth=2.5, facecolor=(1, 1, 1, 0),errcolor=".2", edgecolor=".2",palette="Set3")
+                        sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr, ls='dashed',
+                            linewidth=2.5, facecolor=(1, 1, 1, 0), errcolor=".2", edgecolor=".2", palette="Set3")
                 else:
                     sns.boxplot(base_data['group-rct'],base_data[self.strat_columns[i]].astype('float'),ax=ax_curr,zorder=1)
                     if not new_data.empty:
@@ -411,19 +429,19 @@ class gui(tk.Frame):
         input_file_1 = self.entry1.get()
         input_file_2 = self.entry2.get()
 
-        print("Go 2 callback")
+        #print("Go 2 callback")
 
         if (input_file_1.rsplit(".")[-1] not in ["xlsx"]) or (input_file_2.rsplit(".")[-1] not in ["csv","xlsx","xls"]):
             self.statusText_ffe.set("RCT file must end in xlsx and new file must be in a valid format csv,xlsx,xls.")
             self.message_ffe.configure(fg="red")
-            print("Case 1")
+            #print("Case 1")
         else:
             if input_file_1.rsplit(".")[0].rsplit("_")[-1] not in ["RCT"] :
                 self.statusText_ffe.set("RCT file must have been generated by this program. Its name should end in _RCT")
                 self.message_ffe.configure(fg="red")
-                print("Case 2")
+                #print("Case 2")
             else:    
-                print("Case 3")
+                #print("Case 3")
                 data_rct = pd.read_excel(self.filename1)
                 # delete empty columns
                 data_rct.dropna(axis=1,how='all',inplace=True)
@@ -436,7 +454,6 @@ class gui(tk.Frame):
                 except:
                     pass
 
-                print(data_rct.rename(columns={string:''.join(str.lower(e) for e in string if e.isalnum()) for string in available_columns}))
                 data_rct = data_rct.rename(columns={string:''.join(str.lower(e) for e in string if e.isalnum()) for string in available_columns}) #remove all special characters
 
                 # remove upper case.
@@ -449,7 +466,7 @@ class gui(tk.Frame):
                     data_rct.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True, inplace=True)
 
                 self.data_rct = data_rct
-                print(data_rct)
+                #print(data_rct)
 
                 data_new = pd.read_excel(self.filename2)
                 # delete empty columns
@@ -467,10 +484,10 @@ class gui(tk.Frame):
                 data_new.columns = map(str.lower, data_new.columns)
                 data_new.columns = data_new.columns.str.replace(' ','')
                 self.data_new = data_new 
-                print(data_rct.head())
-                print(data_new.head())
+                #print(data_rct.head())
+                #print(data_new.head())
                 if 'group-rct' in data_rct.columns:
-                    print("And we got in")
+                    #print("And we got in")
                     if set(data_rct.columns)-set(['group-rct','date']) ==  set(data_new.columns):
                         self.sample_p = self.filename1.rsplit("-")[-1].rsplit("_")[0]
                         try:
@@ -479,7 +496,7 @@ class gui(tk.Frame):
                         except IndexError:
                             self.strat_columns = []
                             pass
-                        print("Second window should pop")
+                        #print("Second window should pop")
                         self.prefix = update_stratification(self)
                         if self.prefix is None:
                             self.statusText_ffe.set("Error updating sample.")
@@ -487,7 +504,7 @@ class gui(tk.Frame):
                         else:
                             self.second_frame_existing()                
                     else:
-                        print("Message should appear")
+                        #print("Message should appear")
                         available_columns = list(set(data_rct.columns.values) - set(['group-rct']))
                         self.statusText_ffe.set("Files must have the same structure (columns). \n Previous column names: "+ str([x.encode('utf-8') for x in data_rct[available_columns].columns.values]) +"\n New column names: "+str([x.encode('utf-8') for x in data_new.columns.values]))
                         self.message_ffe.configure(fg="red")

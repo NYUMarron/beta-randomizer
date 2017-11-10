@@ -22,17 +22,19 @@ def stratify(self):
 
     data_set.dropna(axis=1,inplace=True)#,how='all')
     data_set = data_set.apply(lambda x: x.astype(str).str.lower())
-    print(selected_columns)
-    data_set, age_copy, age_index = group_age(data_set)
+    #print(selected_columns)
+    #print(data_set.head())
+    if "age" in self.strat_columns:
+        data_set, age_copy, age_index = group_age(data_set)
     df = data_set.groupby(selected_columns).count().max(axis=1)
     # Create exception here
     df = df.reset_index()
     #df[df.columns[-1]]
 
     n = np.ceil((self.sample_p/100.)*len(data_set))
-    print(n)
-    print("df")
-    print(df)
+    #print(n)
+    #print("df")
+    #print(df)
 
     # - How to ensure sample size when rounding like this.
     df['Size'] = np.ceil(n*(df[df.columns[-1]]/len(data_set)).values)
@@ -47,8 +49,8 @@ def stratify(self):
         else:
             df.loc[rows,'Size'] -= 1
 
-    print("df size")
-    print(df)
+    #print("df size")
+    #print(df)
 
     # And then cut from the larger groups.
     i=0
@@ -61,7 +63,8 @@ def stratify(self):
     data_set['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_set.index]
 
     name = self.filename.rsplit(".")[0]+","+",".join(selected_columns)+'-'+str(self.sample_p)+'_RCT'+'.xlsx'
-    data_set.loc[age_index,'age'] = age_copy 
+    if "age" in self.strat_columns:
+        data_set.loc[age_index,'age'] = age_copy 
     data_set.to_excel(name)
     return name
 
@@ -83,16 +86,15 @@ def update_stratification(self):
 
     p = int(self.sample_p)/100. #percentual proportion
     selected_columns = self.strat_columns 
-    print("p")
-    print(self.sample_p)
-    print("Existing data")
-    print(self.data_rct.head())
+    #print("p")
+    #print(self.sample_p)
+    #print("Existing data")
+    #print(self.data_rct.head())
 
-    print("New data")
-    print(self.data_new.head())
+    #print("New data")
+    #print(self.data_new.head())
 
     data_set = self.data_rct#pd.read_excel(filename)
-    #data_new = pd.read_excel(new_filename)#
     data_set.dropna(axis=0,inplace=True,how='all',subset=data_set.columns[2:])
     data_set.dropna(axis=1,inplace=True,how='all')
     try:
@@ -119,24 +121,24 @@ def update_stratification(self):
     data_temp = data_new.append(data_set.ix[:, :]) # there will be a problem with indexing, I can see it coming.
     data_temp, age_copy, age_index = group_age(data_temp)
 
-    print(selected_columns)
+    #print(selected_columns)
 
-    print("RCT data:")
-    print(data_set.head())
+    #print("RCT data:")
+    #print(data_set.head())
 
-    print("New data:")
-    print(data_new.head())
+    #print("New data:")
+    #print(data_new.head())
 
     data_set = data_temp[data_temp.date!=todaysdate]
     df = data_set.groupby(selected_columns).size().reset_index() #Number of individuals in each group
     label = str(((data_set_copy['group-rct'].value_counts(normalize=True)-p)).idxmin()) # los que se quedan bajitos
     initial_n = data_set_copy['group-rct'].value_counts().loc[label]
 
-    print("label")
-    print(label)
+    #print("label")
+    #print(label)
 
-    print("CROSSTAB")
-    print(pd.crosstab(data_set['group-rct'],[pd.Series(data_set[cols]) for cols in selected_columns]))
+    #print("CROSSTAB")
+    #print(pd.crosstab(data_set['group-rct'],[pd.Series(data_set[cols]) for cols in selected_columns]))
 
     label_pre = pd.crosstab(data_set['group-rct'],[pd.Series(data_set[cols]) for cols in selected_columns]).loc[label].reset_index() 
 
@@ -150,24 +152,24 @@ def update_stratification(self):
     df['Size'] = np.ceil(n*(df[df.columns[-1]]/len(data_temp)).values) # number of individuals that would make up for an even contribution to the groups
 
     # Trying to get a more exact sample size.
-    print("ESTE VALOR")
-    print(n-df['Size'].sum())
+    #print("ESTE VALOR")
+    #print(n-df['Size'].sum())
 
-    print('Grupos share')
-    print(data_set_copy['group-rct'].value_counts(normalize=True))
-    print(data_set_copy['group-rct'].value_counts())
+    #print('Grupos share')
+    #print(data_set_copy['group-rct'].value_counts(normalize=True))
+    #print(data_set_copy['group-rct'].value_counts())
 
-    print("n: "+str(n))
-    print("p: "+str(p))
-    print("initial_n: "+str(initial_n))
-    print("label: "+str(label))
-    print("Actual assignation: "+str(df['Size'].sum()))
+    #print("n: "+str(n))
+    #print("p: "+str(p))
+    #print("initial_n: "+str(initial_n))
+    #print("label: "+str(label))
+    #print("Actual assignation: "+str(df['Size'].sum()))
     
     rows_delete = range(0,len(df))
     random.shuffle(rows_delete)
 
-    print("DF BEFORE")
-    print(df)
+    #print("DF BEFORE")
+    #print(df)
 
     previous_assignation = df['Size'].sum()
 
@@ -186,7 +188,7 @@ def update_stratification(self):
                     print(deleted_ns)   
                     print(df)
     elif n - initial_n > df['Size'].sum():
-        print("BUUUUUUUUUUUU - I would be surprised if this were not impossible. ")
+        #print("BUUUUUUUUUUUU - I would be surprised if this were not impossible. ")
         added_ns = 0 
         for rows in cycle(rows_delete):
             if df.loc[rows,'Size'] > 0:
@@ -201,19 +203,19 @@ def update_stratification(self):
 
 
 
-    print("DF AFTER")
-    print(df)
+    #print("DF AFTER")
+    #print(df)
 
-    print("Current assignation - after")
-    print(df['Size'].sum())
+    #print("Current assignation - after")
+    #print(df['Size'].sum())
     
     df = df.merge(label_pre)
     df['Missing'] = df['Size'] - df[label] # difference between existing and needed amounts
     ind_list = np.array([]) #  Maybe shuffle data_new a little bit
     diff = n - (data_set_copy['group-rct']==label).sum() # desired number of individuals to fill out in the 'label' group. Same as n - initial_n, I hope.
     assigned = 0
-    print("Missing")
-    print(df['Missing'])
+    #print("Missing")
+    #print(df['Missing'])
 
     data_new = data_temp[data_temp.date==todaysdate]
     
@@ -221,31 +223,31 @@ def update_stratification(self):
         if assigned >= n - initial_n:
             break
         else:
-            print("comb")
-            print(comb)
-            print("subset")
-            print(comb[:-4])
+            #print("comb")
+            #print(comb)
+            #print("subset")
+            #print(comb[:-4])
             df_tmp = data_new[(data_new[comb[:-4].index]==comb[:-4].values).all(axis=1)]  # Combinations of factors.
-            print("df_tmp")
-            print(df_tmp)
-            print(df_tmp.index)
+            #print("df_tmp")
+            #print(df_tmp)
+            #print(df_tmp.index)
             sz = len(df_tmp)
             ss = min([sz,df['Missing'].loc[index],diff]) # What I have vs. what I am missing, only god knows why diff is here.
-            print("missing")
-            print(df['Missing'].loc[index])
+            #print("missing")
+            #print(df['Missing'].loc[index])
             if ss > 0:
                 print(ss)
                 ind_list = np.append(ind_list,df_tmp.sample(n=ss).index.values)
                 assigned += ss
             else:
                 pass
-            print("assigned")
-            print(assigned)
+            #print("assigned")
+            #print(assigned)
 
-    print("ind list pre")
-    print(ind_list)
-    print("len ind list pre")
-    print(len(set(ind_list)))
+    #print("ind list pre")
+    #print(ind_list)
+    #print("len ind list pre")
+    #print(len(set(ind_list)))
     # Arreglando esa colita
     if assigned < diff:
         elegible = data_temp[(data_temp['group-rct']=='')&(data_temp['date']==todaysdate)]
@@ -259,12 +261,12 @@ def update_stratification(self):
 
     # I can just randomly delete indices from the lists
     #ind_list = list(pd.DataFrame(ind_list).sample(n))
-    print("ind_list")
-    print(ind_list)
-    print("length")
-    print(len(ind_list))
+    #print("ind_list")
+    #print(ind_list)
+    #print("length")
+    #print(len(ind_list))
 
-    print(pd.DataFrame(ind_list)[0].value_counts())
+    #print(pd.DataFrame(ind_list)[0].value_counts())
 
     ind_list = map(int, ind_list)
     
@@ -278,8 +280,8 @@ def update_stratification(self):
     else:
         data_new['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_new.index]
 
-    print("Value counts")
-    print(data_new['group-rct'].value_counts())
+    #print("Value counts")
+    #print(data_new['group-rct'].value_counts())
 
     name=self.filename1.rsplit(".")[0]+'.xlsx'
     self.total_data  = data_new.append(data_set)
