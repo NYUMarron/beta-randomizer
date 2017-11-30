@@ -5,6 +5,7 @@ import numpy as np
 import datetime as dt
 import random
 from itertools import cycle
+import os
 
 def stratify(self):
     """ 
@@ -63,9 +64,20 @@ def stratify(self):
     data_set['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_set.index]
 
     name = self.filename.rsplit(".")[0]+","+",".join(selected_columns)+'-'+str(self.sample_p)+'_RCT'+'.xlsx'
+    
     if "age" in self.strat_columns:
         data_set.loc[age_index,'age'] = age_copy 
     data_set.to_excel(name)
+    
+    name_log = self.filename.rsplit(".")[0]+","+",".join(selected_columns)+'-'+str(self.sample_p)+str(dt.datetime.now())+'_log.xlsx'
+    writer = pd.ExcelWriter(name_log,engine = 'xlsxwriter')
+    for col in self.strat_columns:
+        if col=="age":
+            pass
+        else:
+            pd.crosstab(data_set[col],data_set['group-rct']).to_excel(writer,sheet_name=col)
+    
+    writer.save()
     return name
 
 
@@ -287,6 +299,17 @@ def update_stratification(self):
     self.total_data  = data_new.append(data_set)
     self.total_data['age'] = age_copy
     self.total_data.to_excel(name)
+
+    name_log = self.filename1.rsplit(".")[0]+'.xlsx'+'_log'+str(dt.datetime.now())+'.xlsx'
+    writer = pd.ExcelWriter(name_log,engine = 'xlsxwriter')
+    for col in self.strat_columns:
+        if col=="age":
+            pass
+        else:
+            pd.crosstab(self.total_data[col],self.total_data['group-rct']).to_excel(writer,sheet_name=col)
+    
+    writer.save()
+
     return name
 
 def group_age(df):

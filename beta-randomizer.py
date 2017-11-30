@@ -120,32 +120,23 @@ class gui(tk.Frame):
             self.statusText.set("Filename must end in `.xlsx', '.csv' or '.xls'")
             self.message.configure(fg="red")
         else:
-            #try:     
-                #try:
-                    #data = pd.read_csv(filename)
-                #except:
-            data = pd.read_excel(self.filename) # delete empty columns
-            data.dropna(axis=1,inplace=True,how='all') # remove upper case.
-            data.dropna(axis=0,inplace=True,how='all')
-            data = data.apply(lambda x: x.astype(str).str.lower()) # replace all special characters.
-            data.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True)
-            data.columns = map(str, data.columns)
-            data.columns = [''.join(str.lower(e) for e in string if e.isalnum()) for string in data.columns]
-            data.apply(lambda x: x.astype(str).str.lower())
-            data = standardize_columns(data) #make sure values have no spaces
+            data = pd.read_excel(self.filename) 
+            data.dropna(axis=1,inplace=True,how='all') # delete empty columns.
+            data.dropna(axis=0,inplace=True,how='all') # delete empty rows.
+            data = data.apply(lambda x: x.astype(str).str.lower()) # lower caps.
+            data.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True) # replace all special characters.
+            data.columns = map(str, data.columns) 
+            data.columns = [''.join(str.lower(e) for e in string if e.isalnum()) for string in data.columns] # replace all special characters in columns.
+            data = data.apply(lambda x: x.astype(str).str.lower()) # perhaps redundant.
+            data = standardize_columns(data) # make sure values have no spaces
             self.data = data
             
+            self.second_frame()
             #print(self.data.head())
             #self.secondframe.tkraise()
-            self.second_frame()
 
-            #except:
-            #    statusText.set("Error reading file" + str(filename))
-            #pass
 
-    def second_frame(self):
-
-        
+    def second_frame(self):        
         #print("Second frame initialized")
 
         self.secondframe = tk.Frame(self.master,width=300, height=350)
@@ -165,9 +156,7 @@ class gui(tk.Frame):
         
         for col in self.data.columns:
             #print("something is happening")
-            if "ccis" in col:
-                pass
-            elif ("name" in col) or ("Name" in col) or ("Surname" in col):
+            if ("ccis" in col) or ("name" in col) or ("Name" in col) or ("Surname" in col):
                 pass
             else:
                 var_temp = tk.IntVar(value=0)   
@@ -226,30 +215,30 @@ class gui(tk.Frame):
         if self.raise_vble_warning and (self.warnings<1):
             self.warning_1(self)
         else:
-            try:
-                if not self.strat_columns:
-                    self.empty_strat_variables()
-                else:
-                    self.sample_p = int(self.second_frame_entry.get())
-                    n = len(self.data)
-                    min_n = len(self.strat_columns)*2
-                    print(self.sample_p)
-                    if 0 <= self.sample_p <= 100:
-                        #print(self.strat_columns)
-                        if min_n >= n:
-                            self.warning_toomanycolumns()
-                        else:
-                            prefix = stratify(self) 
-                            if prefix is None:
-                                self.warning_errorrandomsample()
-                            else:
-                                self.statusText.set("Output is in file {}".format(prefix))
-                                self.message.configure(fg="black")
+            #try:
+            if not self.strat_columns:
+                self.empty_strat_variables()
+            else:
+                self.sample_p = int(self.second_frame_entry.get())
+                n = len(self.data)
+                min_n = len(self.strat_columns)*2
+                print(self.sample_p)
+                if 0 <= self.sample_p <= 100:
+                    #print(self.strat_columns)
+                    if min_n >= n:
+                        self.warning_toomanycolumns()
                     else:
-                        self.warning_wrongnumber()
+                        prefix = stratify(self) 
+                        if prefix is None:
+                            self.warning_errorrandomsample()
+                        else:
+                            self.statusText.set("Output is in file {}".format(prefix))
+                            self.message.configure(fg="black")
+                else:
+                    self.warning_wrongnumber()
 
-            except ValueError:
-                self.warning_wrongnumber()
+            #except ValueError:
+            #    self.warning_wrongnumber()
 
 
                 
@@ -317,14 +306,17 @@ class gui(tk.Frame):
         except KeyError:
             pass
 
-        #print("Balance frame initiated")
+        print("Balance frame initiated")
+        print(self.strat_columns)
         
         if len(self.strat_columns)>0:
             print("Has length")
             fig, axes = plt.subplots(len(self.strat_columns),1) 
             print(hasattr(axes, '__iter__'))
+            i = 0
             if hasattr(axes, '__iter__'):
-                i = 0
+                print("hasattr axes iter")
+                
                 for row in axes:
                     print("Tried here")
                     ax_curr = axes[i]
@@ -351,7 +343,10 @@ class gui(tk.Frame):
                     i+=1
             else:
                 ax_curr = axes
+                print("no attr")
                 if self.strat_columns[i] != 'age':
+                    print("Case no age")
+                    print(self.sample_p)
                     df = (100*(pd.crosstab(base_data['group-rct'],base_data[self.strat_columns[i]],normalize='columns')))
                     df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
                     ax_curr.axhline(y=self.sample_p,c="darkred",linewidth=1,zorder=3)
@@ -366,6 +361,7 @@ class gui(tk.Frame):
                             linewidth=2.5, facecolor=(1, 1, 1, 0), errcolor=".2", edgecolor=".2", palette="Set3")
                 else:
                     sns.boxplot(base_data['group-rct'],base_data[self.strat_columns[i]].astype('float'),ax=ax_curr,zorder=1)
+                    print("Case age")
                     if not new_data.empty:
                         sns.boxplot(new_data['group-rct'],new_data[self.strat_columns[i]].astype('float'),ax=ax_curr, zorder=2)
                         plt.ylim([new_data[self.strat_columns[i]].astype('float').min(),new_data[self.strat_columns[i]].astype('float').max()])
