@@ -139,6 +139,12 @@ class gui(tk.Frame):
     def second_frame(self):        
         #print("Second frame initialized")
 
+        def cb(self):
+            print("came in")
+            for it in self.var_dict:
+                it.config(state=DISABLED)
+            self.refresh()
+
         self.secondframe = tk.Frame(self.master,width=300, height=350)
         self.secondframe.grid(row=0, column=0, sticky="nsew")
 
@@ -150,10 +156,17 @@ class gui(tk.Frame):
         self.statusText.set(" ")
 
         # Create explanatory label
-        tk.Label(self.secondframe, text="Please enter the desired percentage of individuals to be assigned to the control group").pack()
+        tk.Label(self.secondframe, text="Please enter a desired percentage of individuals to be assigned to the control group").pack()
         self.second_frame_entry = tk.Entry(self.secondframe, width=50)
         self.second_frame_entry.pack()
         
+        tk.Label(self.secondframe, text="Please select features from the following list to create a randomization").pack()
+
+        #var_PR = tk.IntVar(value=0)  
+        #li = tk.Checkbutton(self.secondframe,text='Pure randomization',variable=var_PR,command=cb(self))
+        #li.pack()
+        #self.var_PureRand = var_PR
+
         for col in self.data.columns:
             #print("something is happening")
             if ("ccis" in col) or ("name" in col) or ("Name" in col) or ("Surname" in col):
@@ -161,8 +174,14 @@ class gui(tk.Frame):
             else:
                 var_temp = tk.IntVar(value=0)   
                 l = tk.Checkbutton(self.secondframe, text=col, variable=var_temp) 
-                l.pack()  
+                #if self.var_PureRand.get():
+                #    print("We did get in here")
+                #    l.config(state=DISABLED)
+                #else:
                 self.var_dict[col] = var_temp
+                l.pack()  
+
+
 
         tk.Button(self.secondframe,text="Generate sample",command=lambda: self.button_stratify_callback()).pack()
         tk.Button(self.secondframe,text="See resulting balance",command=lambda: self.button_balance_callback()).pack()
@@ -222,7 +241,7 @@ class gui(tk.Frame):
                 self.sample_p = int(self.second_frame_entry.get())
                 n = len(self.data)
                 min_n = len(self.strat_columns)*2
-                print(self.sample_p)
+                #print(self.sample_p)
                 if 0 <= self.sample_p <= 100:
                     #print(self.strat_columns)
                     if min_n >= n:
@@ -306,65 +325,91 @@ class gui(tk.Frame):
         except KeyError:
             pass
 
-        print("Balance frame initiated")
-        print(self.strat_columns)
+        #print("Balance frame initiated")
+        #print(self.strat_columns)
         
         if len(self.strat_columns)>0:
-            print("Has length")
+            #print("Has length")
             fig, axes = plt.subplots(len(self.strat_columns),1) 
-            print(hasattr(axes, '__iter__'))
+            #print(hasattr(axes, '__iter__'))
             i = 0
             if hasattr(axes, '__iter__'):
-                print("hasattr axes iter")
+                #print("hasattr axes iter")
                 
                 for row in axes:
-                    print("Tried here")
+                    #print("Tried here")
                     ax_curr = axes[i]
                     if self.strat_columns[i] != 'age':
-                        df = (100*(pd.crosstab(base_data['group-rct'],base_data[self.strat_columns[i]],normalize='columns')))
+                        df = (100*(pd.crosstab(base_data['group-rct'], base_data[self.strat_columns[i]], normalize='columns')))
                         df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
-                        ax_curr.axhline(y=self.sample_p,c="darkred",linewidth=1,zorder=3)
-                        sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr,zorder=1)
+                        ax_curr.axhline(y=self.sample_p, c="darkred", linewidth=1, zorder=3)
+                        print(self.sample_p)
+                        sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr, zorder=1)
                         plt.ylim([0,100])
-                        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+                        #plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
                         ax_curr.set_ylabel('Percentage [%]')
                         if not new_data.empty:
-                            df_pos = (100*(pd.crosstab(new_data['group-rct'],new_data[self.strat_columns[i]],normalize='columns')))
+                            df_pos = (100*(pd.crosstab(new_data['group-rct'], new_data[self.strat_columns[i]], normalize='columns')))
                             df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
+                            print("DF_POS")
+                            print(df_pos)
                             sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr, ls='dashed',
-                                linewidth=2.5, facecolor=(1, 1, 1, 0), errcolor=".2", edgecolor=".2", palette="Set3")
+                                linewidth=2.5, facecolor=(1, 1, 1, 0))#, errcolor=".2", edgecolor=".2")
                     else:
-                        sns.boxplot(base_data['group-rct'],base_data[self.strat_columns[i]].astype('float'),ax=ax_curr,zorder=1)
+                        ax_bp1 = sns.boxplot(base_data['group-rct'], base_data[self.strat_columns[i]].astype('float'), ax=ax_curr, zorder=1)
+                        for patch_1 in ax_bp1.artists:
+                            r, g, b, a = patch_1.get_facecolor()
+                            patch_1.set_facecolor((r, g, b, 1))
+                            patch_1.set_linestyle('solid')
                         if not new_data.empty:
-                            sns.boxplot(new_data['group-rct'],new_data[self.strat_columns[i]].astype('float'),ax=ax_curr, zorder=2)
-                            plt.ylim([new_data[self.strat_columns[i]].astype('float').min(),new_data[self.strat_columns[i]].astype('float').max()])
+                            ax_bp = sns.boxplot(new_data['group-rct'], new_data[self.strat_columns[i]].astype('float'), ax=ax_curr, zorder=2)
+                            for patch in ax_bp.artists:
+                                r, g, b, a = patch.get_facecolor()
+                                patch.set_facecolor((r, g, b, .3))
+                                patch.set_linestyle('dashed')
+                            plt.ylim([new_data[self.strat_columns[i]].astype('float').min(), new_data[self.strat_columns[i]].astype('float').max()])
+                        else:
+                            plt.ylim([base_data[self.strat_columns[i]].astype('float').min(), base_data[self.strat_columns[i]].astype('float').max()])
                     #plt.ylim([0,100])
                     plt.tight_layout()
                     i+=1
             else:
                 ax_curr = axes
-                print("no attr")
+                #print("no attr")
                 if self.strat_columns[i] != 'age':
-                    print("Case no age")
+                    #print("Case no age")
                     print(self.sample_p)
-                    df = (100*(pd.crosstab(base_data['group-rct'],base_data[self.strat_columns[i]],normalize='columns')))
+                    df = (100*(pd.crosstab(base_data['group-rct'], base_data[self.strat_columns[i]], normalize='columns')))
                     df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
-                    ax_curr.axhline(y=self.sample_p,c="darkred",linewidth=1,zorder=3)
+                    ax_curr.axhline(y=self.sample_p, c="darkred", linewidth=1, zorder=3)
+                    print(self.sample_p)
                     sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr,zorder=1)
                     plt.ylim([0,100])
                     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
                     ax_curr.set_ylabel('Percentage [%]')
                     if not new_data.empty:
-                        df_pos = (100*(pd.crosstab(new_data['group-rct'],new_data[self.strat_columns[i]],normalize='columns')))
+                        df_pos = (100*(pd.crosstab(new_data['group-rct'],new_data[self.strat_columns[i]], normalize='columns')))
                         df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
+                        print("DF_POS")
+                        print(df_pos)
                         sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr, ls='dashed',
-                            linewidth=2.5, facecolor=(1, 1, 1, 0), errcolor=".2", edgecolor=".2", palette="Set3")
+                            linewidth=2.5, facecolor=(1, 1, 1, 0))#, errcolor=".2", edgecolor=".2")
                 else:
-                    sns.boxplot(base_data['group-rct'],base_data[self.strat_columns[i]].astype('float'),ax=ax_curr,zorder=1)
+                    ax_bp1 = sns.boxplot(base_data['group-rct'], base_data[self.strat_columns[i]].astype('float'), ax=ax_curr, zorder=1)
+                    for patch_1 in ax_bp1.artists:
+                        r, g, b, a = patch_1.get_facecolor()
+                        patch_1.set_facecolor((r, g, b, 1))
+                        patch_1.set_linestyle('solid')
                     print("Case age")
                     if not new_data.empty:
-                        sns.boxplot(new_data['group-rct'],new_data[self.strat_columns[i]].astype('float'),ax=ax_curr, zorder=2)
-                        plt.ylim([new_data[self.strat_columns[i]].astype('float').min(),new_data[self.strat_columns[i]].astype('float').max()])
+                        ax_bp = sns.boxplot(new_data['group-rct'], new_data[self.strat_columns[i]].astype('float'), ax=ax_curr, zorder=2)
+                        for patch in ax_bp.artists:
+                            r, g, b, a = patch.get_facecolor()
+                            patch.set_facecolor((r, g, b, .3))
+                            patch.set_linestyle('dashed')
+                        plt.ylim([new_data[self.strat_columns[i]].astype('float').min(), new_data[self.strat_columns[i]].astype('float').max()])
+                    else:
+                        plt.ylim([base_data[self.strat_columns[i]].astype('float').min(), base_data[self.strat_columns[i]].astype('float').max()])
                 #plt.ylim([0,100])
                 plt.tight_layout()
                 i+=1
