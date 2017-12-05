@@ -181,8 +181,6 @@ class gui(tk.Frame):
                 self.var_dict[col] = var_temp
                 l.pack()  
 
-
-
         tk.Button(self.secondframe,text="Generate sample",command=lambda: self.button_stratify_callback()).pack()
         tk.Button(self.secondframe,text="See resulting balance",command=lambda: self.button_balance_callback()).pack()
         tk.Button(self.secondframe,text="Back",command=lambda: self.mainframe.tkraise()).pack()
@@ -536,7 +534,7 @@ class gui(tk.Frame):
                 #print(data_new.head())
                 if 'group-rct' in data_rct.columns:
                     #print("And we got in")
-                    if set(data_rct.columns)-set(['group-rct']) ==  set(data_new.columns):
+                    if set(data_rct.columns)-set(['group-rct','date']) ==  set(data_new.columns):
                         self.sample_p = self.filename1.rsplit("-")[-1].rsplit("_")[0]
                         try:
                             strat_columns = self.filename1.rsplit("-")[-2].rsplit(",")[1:]
@@ -545,15 +543,26 @@ class gui(tk.Frame):
                             self.strat_columns = []
                             pass
                         #print("Second window should pop")
-                        self.prefix = update_stratification(self)
-                        if self.prefix is None:
-                            self.statusText_ffe.set("Error updating sample.")
-                            self.message_ffe.configure(fg="red")
+                        common_columns = list(set(data_rct.columns) & set(data_new.columns))
+                        new_categories = {}
+                        for col in common_columns:
+                            new_values = set(data_new[col]) - set(data_rct[col])
+                            if new_values:
+                                print("NEW VALUES")
+                                new_categories[col] = new_values
+
+                        if bool(new_categories):
+                            self.warning_new_words(new_categories)
                         else:
-                            self.second_frame_existing()                
+                            self.prefix = update_stratification(self)
+                            if self.prefix is None:
+                                self.statusText_ffe.set("Error updating sample.")
+                                self.message_ffe.configure(fg="red")
+                            else:
+                                self.second_frame_existing()                
                     else:
                         #print("Message should appear")
-                        available_columns = list(set(data_rct.columns.values) - set(['group-rct']))
+                        available_columns = list(set(data_rct.columns.values) - set(['group-rct','date']))
                         self.statusText_ffe.set("Files must have the same structure (columns). \n Previous column names: "+ str([x.encode('utf-8') for x in data_rct[available_columns].columns.values]) +"\n New column names: "+str([x.encode('utf-8') for x in data_new.columns.values]))
                         self.message_ffe.configure(fg="red")
                 else:                    
@@ -561,6 +570,21 @@ class gui(tk.Frame):
                     self.message_ffe.configure(fg="red")
                 #pass
             #pass
+
+    def warning_new_words(self,new_categories):
+        print(new_categories)
+        for k,value in new_categories.iteritems():
+            for nvals in value:
+                result = tkMessageBox.askyesno("Warning","The column '"+str(k)+"' has a new value "+str(nvals)+'. Do you accept it?')
+                if result == False:
+                    tkMessageBox.showinfo("Attention","Please update your file and input it again.")
+                    break
+            else:
+                continue
+            self.first_frame_existing()
+            break
+            
+        
 
     def second_frame_existing(self):
 
