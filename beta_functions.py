@@ -65,9 +65,14 @@ def stratify(self):
 
     name = self.filename.rsplit(".")[0]+","+",".join(selected_columns)+'-'+str(self.sample_p)+'_RCT'+'.xlsx'
     
+    data_set['date'] = str(dt.datetime.today().date())
+    data_set['date'] = pd.to_datetime(data_set['date']).dt.date
+    #self.total_data['date'] = self.total_data['date'].dt.strftime('%M/%d/%Y')
+
     if "age" in self.strat_columns:
         data_set.loc[age_index,'age'] = age_copy 
-    data_set.to_excel(name)
+    data_set.to_excel(name,na_rep='')
+
     
     name_log = self.filename.rsplit(".")[0]+","+",".join(selected_columns)+'-'+str(self.sample_p)+str(dt.datetime.now())+'_log.xlsx'
     writer = pd.ExcelWriter(name_log,engine = 'xlsxwriter')
@@ -78,6 +83,7 @@ def stratify(self):
             pd.crosstab(data_set[col],data_set['group-rct']).to_excel(writer,sheet_name=col)
     
     writer.save()
+
     return name
 
 
@@ -141,7 +147,9 @@ def update_stratification(self):
     #print("New data:")
     #print(data_new.head())
 
-    data_set = data_temp[data_temp.date!=todaysdate]
+    #data_set = data_temp[data_temp.date != todaysdate] # seleccionar datos ya asignados
+    data_set = data_temp[(data_temp['group-rct'].isin(['control','intervention']))] # seleccionar datos ya asignados
+    print(data_set)
     df = data_set.groupby(selected_columns).size().reset_index() #Number of individuals in each group
     label = str(((data_set_copy['group-rct'].value_counts(normalize=True)-p)).idxmin()) # los que se quedan bajitos
     initial_n = data_set_copy['group-rct'].value_counts().loc[label]
@@ -212,9 +220,6 @@ def update_stratification(self):
                     print("lo que falta "+str(n - initial_n - df['Size'].sum()))
                     print(added_ns)   
                     print(df)
-
-
-
     #print("DF AFTER")
     #print(df)
 
@@ -229,7 +234,10 @@ def update_stratification(self):
     #print("Missing")
     #print(df['Missing'])
 
-    data_new = data_temp[data_temp.date==todaysdate]
+    #data_new = data_temp[data_temp.date==todaysdate] # what happens if an update happens on the same day?
+    #data_ = data_temp[data_temp['group-rct'].isnull()]
+    data_new = data_temp[~(data_temp['group-rct'].isin(['control','intervention']))]
+
     
     for index,comb in df.iterrows():
         if assigned >= n - initial_n:
@@ -282,6 +290,9 @@ def update_stratification(self):
 
     ind_list = map(int, ind_list)
     
+    print("data_new")
+    print(data_new)
+
     if label == 'control':
         data_new.loc[ind_list,'group-rct'] = "control"
         data_new.loc[set(data_new.index.values ) - set(ind_list),'group-rct'] = "intervention"
@@ -298,9 +309,11 @@ def update_stratification(self):
     name=self.filename1.rsplit(".")[0]+'.xlsx'
     self.total_data  = data_new.append(data_set)
     self.total_data['age'] = age_copy
-    self.total_data.to_excel(name)
+    self.total_data['date'] = pd.to_datetime(self.total_data['date']).dt.date
+    #self.total_data['date'] = self.total_data['date'].dt.strftime('%M/%d/%Y')
+    self.total_data.to_excel(name,na_rep='')
 
-    name_log = self.filename1.rsplit(".")[0]+'.xlsx'+'_log'+str(dt.datetime.now())+'.xlsx'
+    name_log = self.filename1.rsplit(".")[0]+str(dt.datetime.now())+'_log.xlsx'
     writer = pd.ExcelWriter(name_log,engine = 'xlsxwriter')
     for col in self.strat_columns:
         if col=="age":
