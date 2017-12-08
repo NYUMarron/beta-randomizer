@@ -62,6 +62,7 @@ class gui(tk.Frame):
         self.strat_columns = []
         self.sample_p = 0
         self.raise_vble_warning = False
+        self.name = None
 
         self.mainframe = tk.Frame(self.master,width=300, height=350)
         self.mainframe.grid(row=0, column=0, sticky="nsew")
@@ -298,10 +299,10 @@ class gui(tk.Frame):
         self.second_frame()
 
     def button_balance_callback(self):
-        try:
-            self.rct = pd.read_excel(self.filename.rsplit(".")[0]+","+",".join(self.strat_columns)+'-'+str(self.sample_p)+'_RCT'+'.xlsx')
+        if self.name:
+            self.rct = pd.read_excel(self.name)
             self.balance_frame(base_data=self.rct)
-        except:
+        else:
             self.statusText.set("It is first necessary to create a randomized sample.")
             self.message.configure(fg="red")
 
@@ -350,20 +351,20 @@ class gui(tk.Frame):
                         
                         #plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
                         if not new_data.empty:
-                            df_pos = (100*(pd.crosstab(new_data['group-rct'], new_data[self.strat_columns[i]], normalize='columns')))
+                            df_pos = (100*(pd.crosstab(new_data['group-rct'], new_data[self.strat_columns[i]], normalize ='columns')))
                             df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
                             print("DF_POS")
                             print(df_pos)
-                            sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr, ls='dashed',linewidth=2.5, facecolor=(1, 1, 1, 0))#, errcolor=".2", edgecolor=".2")
+                            sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax = ax_curr, ls = 'dashed',linewidth=2.5, facecolor=(1, 1, 1, 0))#, errcolor=".2", edgecolor=".2")
                         plt.ylim([0,100])
                     else:
-                        ax_bp1 = sns.boxplot(base_data['group-rct'], base_data[self.strat_columns[i]].astype('float'), ax=ax_curr, zorder=1)
+                        ax_bp1 = sns.boxplot(base_data['group-rct'], base_data[self.strat_columns[i]].astype('float'), ax = ax_curr, zorder=1)
                         for patch_1 in ax_bp1.artists:
                             r, g, b, a = patch_1.get_facecolor()
                             patch_1.set_facecolor((r, g, b, 1))
                             patch_1.set_linestyle('solid')
                         if not new_data.empty:
-                            ax_bp = sns.boxplot(new_data['group-rct'], new_data[self.strat_columns[i]].astype('float'), ax=ax_curr, zorder=2)
+                            ax_bp = sns.boxplot(new_data['group-rct'], new_data[self.strat_columns[i]].astype('float'), ax = ax_curr, zorder=2)
                             for patch in ax_bp.artists:
                                 r, g, b, a = patch.get_facecolor()
                                 patch.set_facecolor((r, g, b, .3))
@@ -478,7 +479,7 @@ class gui(tk.Frame):
         #print("Go 2 callback")
 
         if (input_file_1.rsplit(".")[-1] not in ["xlsx"]) or (input_file_2.rsplit(".")[-1] not in ["csv","xlsx","xls"]):
-            self.statusText_ffe.set("RCT file must end in xlsx and new file must be in a valid format csv,xlsx,xls.")
+            self.statusText_ffe.set("RCT file must end in xlsx and new file must be in a valid format csv, xlsx or xls.")
             self.message_ffe.configure(fg="red")
             #print("Case 1")
         else:
@@ -535,9 +536,9 @@ class gui(tk.Frame):
                 if 'group-rct' in data_rct.columns:
                     #print("And we got in")
                     if set(data_rct.columns)-set(['group-rct','date']) ==  set(data_new.columns):
-                        self.sample_p = self.filename1.rsplit("-")[-1].rsplit("_")[0]
+                        self.sample_p = self.filename1.rsplit("_")[-2]
                         try:
-                            strat_columns = self.filename1.rsplit("-")[-2].rsplit(",")[1:]
+                            strat_columns = self.filename1.rsplit("|")[-1].rsplit("_")[0].rsplit(",")
                             self.strat_columns = [''.join(c.lower() for c in x if not c.isspace()) for x in strat_columns]
                         except IndexError:
                             self.strat_columns = []
@@ -583,8 +584,14 @@ class gui(tk.Frame):
                 continue
             self.first_frame_existing()
             break
+        else:
+            self.prefix = update_stratification(self)
+            if self.prefix is None:
+                self.statusText_ffe.set("Error updating sample.")
+                self.message_ffe.configure(fg="red")
+            else:
+                self.second_frame_existing()    
             
-        
 
     def second_frame_existing(self):
 

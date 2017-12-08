@@ -63,18 +63,19 @@ def stratify(self):
 
     data_set['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_set.index]
 
-    name = self.filename.rsplit(".")[0]+","+",".join(selected_columns)+'-'+str(self.sample_p)+'_RCT'+'.xlsx'
+    todaysdate = str(dt.datetime.today().date())
+    self.name = self.filename.rsplit(".")[0]+"|"+",".join(selected_columns)+'_'+str(todaysdate)+'_'+str(int(len(data_set)))+'_'+str(self.sample_p)+'_RCT'+'.xlsx'
     
-    data_set['date'] = str(dt.datetime.today().date())
+    data_set['date'] = todaysdate
     data_set['date'] = pd.to_datetime(data_set['date']).dt.date
     #self.total_data['date'] = self.total_data['date'].dt.strftime('%M/%d/%Y')
 
     if "age" in self.strat_columns:
         data_set.loc[age_index,'age'] = age_copy 
-    data_set.to_excel(name,na_rep='')
+    data_set.to_excel(self.name,na_rep='')
 
     
-    name_log = self.filename.rsplit(".")[0]+","+",".join(selected_columns)+'-'+str(self.sample_p)+str(dt.datetime.now())+'_log.xlsx'
+    name_log = self.filename.rsplit(".")[0]+"|"+",".join(selected_columns)+'-'+str(self.sample_p)+str(dt.datetime.now())+'_log.xlsx'
     writer = pd.ExcelWriter(name_log,engine = 'xlsxwriter')
     for col in self.strat_columns:
         if col=="age":
@@ -84,7 +85,7 @@ def stratify(self):
     
     writer.save()
 
-    return name
+    return self.name
 
 
 def update_stratification(self):
@@ -104,6 +105,8 @@ def update_stratification(self):
 
     p = int(self.sample_p)/100. #percentual proportion
     selected_columns = self.strat_columns 
+    print("columns")
+    print(selected_columns)
     #print("p")
     #print(self.sample_p)
     #print("Existing data")
@@ -305,13 +308,14 @@ def update_stratification(self):
 
     #print("Value counts")
     #print(data_new['group-rct'].value_counts())
-
-    name=self.filename1.rsplit(".")[0]+'.xlsx'
+    
     self.total_data  = data_new.append(data_set)
     self.total_data['age'] = age_copy
     self.total_data['date'] = pd.to_datetime(self.total_data['date']).dt.date
+    self.name = self.filename1.rsplit("_")[0]+'_'+str(todaysdate)+'_'+str(len(self.total_data))+'_RCT'+'.xlsx'#self.filename1.rsplit(".")[0]+'.xlsx'
     #self.total_data['date'] = self.total_data['date'].dt.strftime('%M/%d/%Y')
-    self.total_data.to_excel(name,na_rep='')
+
+    self.total_data.to_excel(self.name,na_rep='')
 
     name_log = self.filename1.rsplit(".")[0]+str(dt.datetime.now())+'_log.xlsx'
     writer = pd.ExcelWriter(name_log,engine = 'xlsxwriter')
@@ -323,7 +327,7 @@ def update_stratification(self):
     
     writer.save()
 
-    return name
+    return self.name
 
 def group_age(df):
     for cols in df.columns:
