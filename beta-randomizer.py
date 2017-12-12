@@ -168,7 +168,7 @@ class gui(tk.Frame):
         #li.pack()
         #self.var_PureRand = var_PR
 
-        for col in self.data.columns:
+        for col in self.data.columns[1:]:
             #print("something is happening")
             if ("ccis" in col) or ("name" in col) or ("Name" in col) or ("Surname" in col):
                 pass
@@ -544,7 +544,7 @@ class gui(tk.Frame):
                             self.strat_columns = []
                             pass
                         #print("Second window should pop")
-                        common_columns = list(set(data_rct.columns) & set(data_new.columns))
+                        common_columns = list(set(data_rct.columns[1:]) & set(data_new.columns[1:]))
                         new_categories = {}
                         for col in common_columns:
                             new_values = set(data_new[col]) - set(data_rct[col])
@@ -555,6 +555,8 @@ class gui(tk.Frame):
                         if bool(new_categories):
                             self.warning_new_words(new_categories)
                         else:
+
+
                             self.prefix = update_stratification(self)
                             if self.prefix is None:
                                 self.statusText_ffe.set("Error updating sample.")

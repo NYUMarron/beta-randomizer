@@ -72,16 +72,15 @@ def stratify(self):
 
     if "age" in self.strat_columns:
         data_set.loc[age_index,'age'] = age_copy 
-    data_set.to_excel(self.name,na_rep='')
+    data_set.to_excel(self.name, na_rep='',index=False)
 
-    
     name_log = self.filename.rsplit(".")[0]+"|"+",".join(selected_columns)+'-'+str(self.sample_p)+str(dt.datetime.now())+'_log.xlsx'
-    writer = pd.ExcelWriter(name_log,engine = 'xlsxwriter')
+    writer = pd.ExcelWriter(name_log, engine = 'xlsxwriter')
     for col in self.strat_columns:
         if col=="age":
             pass
         else:
-            pd.crosstab(data_set[col],data_set['group-rct']).to_excel(writer,sheet_name=col)
+            pd.crosstab(data_set[col],data_set['group-rct']).to_excel(writer, sheet_name=col)
     
     writer.save()
 
@@ -153,9 +152,10 @@ def update_stratification(self):
     #data_set = data_temp[data_temp.date != todaysdate] # seleccionar datos ya asignados
     data_set = data_temp[(data_temp['group-rct'].isin(['control','intervention']))] # seleccionar datos ya asignados
     print(data_set)
-    df = data_set.groupby(selected_columns).size().reset_index() #Number of individuals in each group
+    #df = data_set.groupby(selected_columns).size().reset_index() # Number of individuals in each group
+    df = data_temp.groupby(selected_columns).size().reset_index() # Number of individuals in each group
     label = str(((data_set_copy['group-rct'].value_counts(normalize=True)-p)).idxmin()) # los que se quedan bajitos
-    initial_n = data_set_copy['group-rct'].value_counts().loc[label]
+    initial_n = data_set_copy['group-rct'].value_counts().loc[label] # size de los que se quedan bajitos
 
     #print("label")
     #print(label)
@@ -166,9 +166,9 @@ def update_stratification(self):
     label_pre = pd.crosstab(data_set['group-rct'],[pd.Series(data_set[cols]) for cols in selected_columns]).loc[label].reset_index() 
 
     # desired size
-    if label=='control':
+    if label == 'control':
         n = np.ceil(p*len(data_temp)) 
-    elif label=='intervention':
+    elif label == 'intervention':
         n = np.ceil((1-p)*len(data_temp)) 
     else:
         print("ERROOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOR")
@@ -308,22 +308,25 @@ def update_stratification(self):
 
     #print("Value counts")
     #print(data_new['group-rct'].value_counts())
+
+    todaysdate = str(dt.datetime.today().date())
     
     self.total_data  = data_new.append(data_set)
     self.total_data['age'] = age_copy
     self.total_data['date'] = pd.to_datetime(self.total_data['date']).dt.date
-    self.name = self.filename1.rsplit("_")[0]+'_'+str(todaysdate)+'_'+str(len(self.total_data))+'_RCT'+'.xlsx'#self.filename1.rsplit(".")[0]+'.xlsx'
+    self.name = self.filename1.rsplit("|")[0]+"|"+",".join(self.strat_columns)+'_'+todaysdate+'_'+str(int(len(self.total_data)))+'_'+str(self.sample_p)+'_RCT'+'.xlsx'
     #self.total_data['date'] = self.total_data['date'].dt.strftime('%M/%d/%Y')
 
-    self.total_data.to_excel(self.name,na_rep='')
+    self.total_data = self.total_data.set_index(self.data_rct.columns[0])
+    self.total_data.to_excel(self.name, na_rep='')
 
-    name_log = self.filename1.rsplit(".")[0]+str(dt.datetime.now())+'_log.xlsx'
-    writer = pd.ExcelWriter(name_log,engine = 'xlsxwriter')
+    name_log = self.filename1.rsplit(".")[0]+todaysdate+'_log.xlsx'
+    writer = pd.ExcelWriter(name_log, engine = 'xlsxwriter')
     for col in self.strat_columns:
         if col=="age":
             pass
         else:
-            pd.crosstab(self.total_data[col],self.total_data['group-rct']).to_excel(writer,sheet_name=col)
+            pd.crosstab(self.total_data[col], self.total_data['group-rct']).to_excel(writer, sheet_name=col)
     
     writer.save()
 
