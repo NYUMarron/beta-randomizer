@@ -68,6 +68,7 @@ def stratify(self):
     
     data_set['date'] = todaysdate
     data_set['date'] = pd.to_datetime(data_set['date']).dt.date
+    data_set['batch'] = int(1)
     #self.total_data['date'] = self.total_data['date'].dt.strftime('%M/%d/%Y')
 
     if "age" in self.strat_columns:
@@ -329,14 +330,17 @@ def update_stratification(self):
     #print(data_new['group-rct'].value_counts())
 
     todaysdate = str(dt.datetime.today().date())
+    data_new['batch'] = int(np.max(data_set.batch.value_counts().index.astype('int').values)) + int(1)
     
-    self.total_data  = data_new.append(data_set)
+    self.total_data = data_new.append(data_set)
     self.total_data['age'] = age_copy
     self.total_data['date'] = pd.to_datetime(self.total_data['date']).dt.date
     self.name = self.filename1.rsplit("|")[0]+"|"+",".join(self.strat_columns)+'_'+todaysdate+'_'+str(int(len(self.total_data)))+'_'+str(self.sample_p)+'_RCT'+'.xlsx'
+    self.name_static = self.filename1.rsplit("|")[0]+"|"+",".join(self.strat_columns)+'_'+todaysdate+'_'+str(int(len(self.total_data)))+'_'+str(self.sample_p)+'.xlsx'
     #self.total_data['date'] = self.total_data['date'].dt.strftime('%M/%d/%Y')
 
     self.total_data = self.total_data.set_index(self.data_rct.columns[0])
+    data_new.to_excel(self.name_static, na_rep='',index=False)
     self.total_data.to_excel(self.name, na_rep='')
 
     name_log = self.filename1.rsplit(".")[0]+todaysdate+'_log.xlsx'

@@ -497,7 +497,7 @@ class gui(tk.Frame):
                 data_rct.columns = map(str, data_rct.columns)
                 available_columns = []
                 try:
-                    available_columns = list(set(data_rct.columns.values) - set(['group-rct','date']))
+                    available_columns = list(set(data_rct.columns.values) - set(['group-rct','date','batch']))
                 except:
                     pass
 
@@ -535,7 +535,7 @@ class gui(tk.Frame):
                 #print(data_new.head())
                 if 'group-rct' in data_rct.columns:
                     #print("And we got in")
-                    if set(data_rct.columns)-set(['group-rct','date']) ==  set(data_new.columns):
+                    if set(data_rct.columns)-set(['group-rct','date','batch']) ==  set(data_new.columns):
                         self.sample_p = self.filename1.rsplit("_")[-2]
                         try:
                             strat_columns = self.filename1.rsplit("|")[-1].rsplit("_")[0].rsplit(",")
@@ -547,10 +547,11 @@ class gui(tk.Frame):
                         common_columns = list(set(data_rct.columns[1:]) & set(data_new.columns[1:]))
                         new_categories = {}
                         for col in common_columns:
-                            new_values = set(data_new[col]) - set(data_rct[col])
-                            if new_values:
-                                print("NEW VALUES")
-                                new_categories[col] = new_values
+                            if col!='age':
+                                new_values = set(data_new[col]) - set(data_rct[col])
+                                if new_values:
+                                    print("NEW VALUES")
+                                    new_categories[col] = new_values
 
                         if bool(new_categories):
                             self.warning_new_words(new_categories)
@@ -565,7 +566,7 @@ class gui(tk.Frame):
                                 self.second_frame_existing()                
                     else:
                         #print("Message should appear")
-                        available_columns = list(set(data_rct.columns.values) - set(['group-rct','date']))
+                        available_columns = list(set(data_rct.columns.values) - set(['group-rct','date','batch']))
                         self.statusText_ffe.set("Files must have the same structure (columns). \n Previous column names: "+ str([x.encode('utf-8') for x in data_rct[available_columns].columns.values]) +"\n New column names: "+str([x.encode('utf-8') for x in data_new.columns.values]))
                         self.message_ffe.configure(fg="red")
                 else:                    
