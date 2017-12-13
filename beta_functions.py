@@ -172,21 +172,20 @@ def update_stratification(self):
         n = np.ceil((1-p)*len(data_temp)) 
     else:
         print("ERROOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOR")
-    df['Size'] = np.ceil(n*(df[df.columns[-1]]/len(data_temp)).values) # number of individuals that would make up for an even contribution to the groups
-
+    df['Size'] = np.ceil(n*(df[df.columns[-1]]/len(data_temp)).values) # number of individuals in the selected intervention that would make up for a balanced contribution to the covariates
     # Trying to get a more exact sample size.
     #print("ESTE VALOR")
     #print(n-df['Size'].sum())
 
-    #print('Grupos share')
-    #print(data_set_copy['group-rct'].value_counts(normalize=True))
-    #print(data_set_copy['group-rct'].value_counts())
+    print('Grupos share')
+    print(data_set_copy['group-rct'].value_counts(normalize=True))
+    print(data_set_copy['group-rct'].value_counts())
 
-    #print("n: "+str(n))
-    #print("p: "+str(p))
-    #print("initial_n: "+str(initial_n))
-    #print("label: "+str(label))
-    #print("Actual assignation: "+str(df['Size'].sum()))
+    print("n: "+str(n))
+    print("p: "+str(p))
+    print("initial_n: "+str(initial_n))
+    print("label: "+str(label))
+    print("Actual assignation: "+str(df['Size'].sum()))
     
     rows_delete = range(0,len(df))
     random.shuffle(rows_delete)
@@ -196,26 +195,33 @@ def update_stratification(self):
 
     previous_assignation = df['Size'].sum()
 
-
-    if n - initial_n < df['Size'].sum():
+    # -- This cicle determines the sizes of the groups given by the covariates
+    print(n-initial_n)
+    print(df['Size'].sum())
+    if (n) < df['Size'].sum(): #- initial_n
+        print("Sobran individuos por aleatorizar")
         deleted_ns = 0  
         for rows in cycle(rows_delete):
+            print("Entramos al ciclo")
             if df.loc[rows,'Size'] > 0:
                 #((1/p)*df['Size'].sum())-n:
-                if deleted_ns >= n - initial_n - df['Size'].sum() :
+                print(deleted_ns)
+                if deleted_ns >= (previous_assignation - n):#- (n - initial_n)): #n - initial_n - df['Size'].sum() :
+                    print("Rompimos")
                     break
                 else:
                     df.loc[rows,'Size'] -= 1
                     deleted_ns += 1
-                    print("lo que falta "+str(n - initial_n - df['Size'].sum()))
+                    print("lo que falta "+str(n - df['Size'].sum())) #- initial_n 
                     print(deleted_ns)   
                     print(df)
-    elif n - initial_n > df['Size'].sum():
+    elif (n) > df['Size'].sum(): #- initial_n
+        print("Faltan individuos por aleatorizar")
         #print("BUUUUUUUUUUUU - I would be surprised if this were not impossible. ")
         added_ns = 0 
         for rows in cycle(rows_delete):
             if df.loc[rows,'Size'] > 0:
-                if added_ns >= n - initial_n - df['Size'].sum():
+                if added_ns >= ((n - initial_n) - previous_assignation ):
                     break
                 else:
                     df.loc[rows,'Size'] += 1
@@ -226,23 +232,26 @@ def update_stratification(self):
     #print("DF AFTER")
     #print(df)
 
-    #print("Current assignation - after")
-    #print(df['Size'].sum())
+    print("Current assignation - after")
+    print(df['Size'].sum())
     
     df = df.merge(label_pre)
     df['Missing'] = df['Size'] - df[label] # difference between existing and needed amounts
     ind_list = np.array([]) #  Maybe shuffle data_new a little bit
     diff = n - (data_set_copy['group-rct']==label).sum() # desired number of individuals to fill out in the 'label' group. Same as n - initial_n, I hope.
     assigned = 0
-    #print("Missing")
-    #print(df['Missing'])
+    print("Missing")
+    print(df['Missing'])
+    print("diff")
+    print(diff)
 
     #data_new = data_temp[data_temp.date==todaysdate] # what happens if an update happens on the same day?
     #data_ = data_temp[data_temp['group-rct'].isnull()]
     data_new = data_temp[~(data_temp['group-rct'].isin(['control','intervention']))]
 
-    
+    # -- This cycle assigns groups at random given our corrected sizes.
     for index,comb in df.iterrows():
+        # This should ensure that we are not filling in more numbers than necessary (but not the inverse)
         if assigned >= n - initial_n:
             break
         else:
@@ -255,26 +264,33 @@ def update_stratification(self):
             #print(df_tmp)
             #print(df_tmp.index)
             sz = len(df_tmp)
-            ss = min([sz,df['Missing'].loc[index],diff]) # What I have vs. what I am missing, only god knows why diff is here.
+            ss = min([sz, df['Missing'].loc[index], diff]) # What I have vs. what I am missing, only god knows why diff is here.
             #print("missing")
             #print(df['Missing'].loc[index])
             if ss > 0:
                 print(ss)
-                ind_list = np.append(ind_list,df_tmp.sample(n=ss).index.values)
+                ind_list = np.append(ind_list, df_tmp.sample(n=ss).index.values)
                 assigned += ss
             else:
                 pass
             #print("assigned")
             #print(assigned)
-
-    #print("ind list pre")
-    #print(ind_list)
-    #print("len ind list pre")
-    #print(len(set(ind_list)))
+    print("Assigned")
+    print(assigned)
+    print("diff")
+    print(diff)
+    print("ind list pre")
+    print(ind_list)
+    print("len ind list pre")
+    print(len(set(ind_list)))
     # Arreglando esa colita
     if assigned < diff:
+
         elegible = data_temp[(data_temp['group-rct']=='')&(data_temp['date']==todaysdate)]
+        print(elegible)
         available = min(diff-assigned,len(data_temp[data_temp['date']==todaysdate]))
+        print(available)
+
         if len(elegible) >= available:
             ind_list_b = elegible.sample(available).index.values
             ind_list   = np.append(ind_list,ind_list_b)
@@ -282,19 +298,20 @@ def update_stratification(self):
             ind_list_b = elegible.index.values
             ind_list   = np.append(ind_list,ind_list_b)
 
+    print("ind_list")
+    print(ind_list)
+    print("length")
+    print(len(ind_list))
     # I can just randomly delete indices from the lists
     #ind_list = list(pd.DataFrame(ind_list).sample(n))
-    #print("ind_list")
-    #print(ind_list)
-    #print("length")
-    #print(len(ind_list))
+
 
     #print(pd.DataFrame(ind_list)[0].value_counts())
 
     ind_list = map(int, ind_list)
     
-    print("data_new")
-    print(data_new)
+    #print("data_new")
+    #print(data_new)
 
     if label == 'control':
         data_new.loc[ind_list,'group-rct'] = "control"
@@ -304,7 +321,9 @@ def update_stratification(self):
                 print("malo")
                 print(x)
     else:
-        data_new['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_new.index]
+        #data_new['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_new.index]
+        data_new.loc[ind_list,'group-rct'] = "intervention"
+        data_new.loc[set(data_new.index.values ) - set(ind_list),'group-rct'] = "control"
 
     #print("Value counts")
     #print(data_new['group-rct'].value_counts())
@@ -327,7 +346,6 @@ def update_stratification(self):
             pass
         else:
             pd.crosstab(self.total_data[col], self.total_data['group-rct']).to_excel(writer, sheet_name=col)
-    
     writer.save()
 
     return self.name
@@ -340,5 +358,5 @@ def group_age(df):
             df['age'] = df[cols].astype('float')
             df.loc[df['age'] > qtile[len(qtile)-1], 'age'] = '['+str(qtile[len(qtile)-1])+'-'+str(df['age'].max())+']'
             for i in range(len(qtile)-1):
-                df.loc[(df['age']>=qtile[i]) & (df['age']<qtile[i+1]),'age'] = '['+str(qtile[i])+'-'+str(qtile[i+1])+')'
+                df.loc[(df['age'] >= qtile[i]) & (df['age']<qtile[i+1]),'age'] = '['+str(qtile[i])+'-'+str(qtile[i+1])+')'
     return df, age_copy, df.index

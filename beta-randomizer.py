@@ -88,7 +88,7 @@ class gui(tk.Frame):
         self.statusText = tk.StringVar()
         self.statusText.set("Press Browse or enter CSV filename, "
                         "then press Next")
-        self.label = tk.Label(self.firstframe, text="Please load a file: ").pack(expand=True)
+        self.label = tk.Label(self.firstframe, text = "Please load a file: ").pack(expand=True)
 
         self.first_frame_entry = tk.Entry(self.firstframe, width=50)
         self.first_frame_entry.pack(expand=True)
@@ -98,7 +98,7 @@ class gui(tk.Frame):
         tk.Button(self.firstframe, text="Browse", command=lambda: self.button_browse_callback()).pack(expand=True)
         tk.Button(self.firstframe, text="Next", command=lambda: self.button_go_callback()).pack(expand=True)
         tk.Button(self.firstframe, text="Back", command=lambda: self.mainframe.tkraise()).pack(expand=True)
-        tk.Button(self.firstframe, text="Exit", command=tk.sys.exit).pack(expand=True,side=tk.BOTTOM)
+        tk.Button(self.firstframe, text="Exit", command=tk.sys.exit).pack(expand=True, side=tk.BOTTOM)
 
         tk.Frame(self.firstframe, height=2, bd=1, relief=tk.SUNKEN).pack(fill=tk.X, padx=5, pady=5)
 
@@ -222,7 +222,7 @@ class gui(tk.Frame):
                         self.strat_columns.append("age")
                     elif (cols == "PO") or (cols=="Judge"):
                         self.controller.raise_vble_warning = True
-                        if self.warnings>0:    
+                        if self.warnings > 0:    
                             self.strat_columns.append(cols)
                     else:
                         self.strat_columns.append(cols)
@@ -355,7 +355,7 @@ class gui(tk.Frame):
                             df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
                             print("DF_POS")
                             print(df_pos)
-                            sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax = ax_curr, ls = 'dashed',linewidth=2.5, facecolor=(1, 1, 1, 0))#, errcolor=".2", edgecolor=".2")
+                            sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax = ax_curr, ls = 'dashed', linewidth=2.5, facecolor=(1, 1, 1, 0))#, errcolor=".2", edgecolor=".2")
                         plt.ylim([0,100])
                     else:
                         ax_bp1 = sns.boxplot(base_data['group-rct'], base_data[self.strat_columns[i]].astype('float'), ax = ax_curr, zorder=1)
