@@ -43,7 +43,6 @@ class gui(tk.Frame):
     def __init__(self, master, *args, **kwargs):
         tk.Frame.__init__(self, master, *args, **kwargs)
         self.master = master
-
         self.main_frame()
         self.first_frame()
         self.second_frame()
@@ -63,6 +62,8 @@ class gui(tk.Frame):
         self.sample_p = 0
         self.raise_vble_warning = False
         self.name = None
+        self.pure_randomization_text = 'Pure randomization'
+        self.pure_randomization_boolean = False
 
         self.mainframe = tk.Frame(self.master,width=300, height=350)
         self.mainframe.grid(row=0, column=0, sticky="nsew")
@@ -167,20 +168,19 @@ class gui(tk.Frame):
         #li = tk.Checkbutton(self.secondframe,text='Pure randomization',variable=var_PR,command=cb(self))
         #li.pack()
         #self.var_PureRand = var_PR
-
-        for col in self.data.columns[1:]:
-            #print("something is happening")
-            if ("ccis" in col) or ("name" in col) or ("Name" in col) or ("Surname" in col):
-                pass
-            else:
-                var_temp = tk.IntVar(value=0)   
-                l = tk.Checkbutton(self.secondframe, text=col, variable=var_temp) 
-                #if self.var_PureRand.get():
-                #    print("We did get in here")
-                #    l.config(state=DISABLED)
-                #else:
-                self.var_dict[col] = var_temp
-                l.pack()  
+        if not self.data.empty:
+            col_possibilities = list(self.data.columns[1:].values)+[self.pure_randomization_text]
+            print(list(self.data.columns[1:].values))
+            print(col_possibilities)
+            for col in col_possibilities:
+                #print("something is happening")
+                if ("ccis" in col) or ("name" in col) or ("Name" in col) or ("Surname" in col):
+                    pass
+                else:
+                    var_temp = tk.IntVar(value=0)   
+                    l = tk.Checkbutton(self.secondframe, text=col, variable=var_temp) 
+                    self.var_dict[col] = var_temp
+                    l.pack()  
 
         tk.Button(self.secondframe,text="Generate sample",command=lambda: self.button_stratify_callback()).pack()
         tk.Button(self.secondframe,text="See resulting balance",command=lambda: self.button_balance_callback()).pack()
@@ -196,7 +196,9 @@ class gui(tk.Frame):
         def set_stratifying_variables(self):
             for cols,vs in self.var_dict.iteritems():
                 if vs.get():
-                    if "dob" in cols.lower():
+                    if cols==self.pure_randomization_text:
+                        self.pure_randomization_boolean = True
+                    elif "dob" in cols.lower():
                         try:
                             self.data[cols] = pd.to_datetime(self.data[cols])
                         except:
@@ -234,7 +236,7 @@ class gui(tk.Frame):
             self.warning_1(self)
         else:
             #try:
-            if not self.strat_columns:
+            if ((not self.strat_columns) and (not self.pure_randomization_boolean)):
                 self.empty_strat_variables()
             else:
                 self.sample_p = int(self.second_frame_entry.get())
@@ -329,96 +331,86 @@ class gui(tk.Frame):
         
         if len(self.strat_columns)>0:
             #print("Has length")
-            fig, axes = plt.subplots(len(self.strat_columns),1) 
             #print(hasattr(axes, '__iter__'))
             i = 0
-            if hasattr(axes, '__iter__'):
-                print("hasattr axes iter")
-                
-                for row in axes:
-                    #print("Tried here")
+            fig, axes = plt.subplots(len(self.strat_columns),1,figsize=(9,2)) 
+
+            if not new_data.empty:
+                for i in range(len(self.strat_columns)):
                     ax_curr = axes[i]
-                    if self.strat_columns[i] != 'age':
+                    if self.strat_columns[i]!='age':
+
                         df = (100*(pd.crosstab(base_data['group-rct'], base_data[self.strat_columns[i]], normalize='columns')))
                         df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
-                        
-                        print(self.sample_p)
-                        
-                        bpt = sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr, zorder=1)
-                        bpt.set_ylabel('Percentage');
-                        #ax_curr.hlines(y=self.sample_p, xmin=1, xmax=100)#, colors="darkred", linewidth=100, zorder=3)
-                        #ax_curr.axhline(y=self.sample_p, c="darkred", linewidth=1, zorder=3)
-                        
-                        #plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-                        if not new_data.empty:
-                            df_pos = (100*(pd.crosstab(new_data['group-rct'], new_data[self.strat_columns[i]], normalize ='columns')))
-                            df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
-                            print("DF_POS")
-                            print(df_pos)
-                            sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax = ax_curr, ls = 'dashed', linewidth=2.5, facecolor=(1, 1, 1, 0))#, errcolor=".2", edgecolor=".2")
-                        plt.ylim([0,100])
-                    else:
-                        ax_bp1 = sns.boxplot(base_data['group-rct'], base_data[self.strat_columns[i]].astype('float'), ax = ax_curr, zorder=1)
-                        for patch_1 in ax_bp1.artists:
-                            r, g, b, a = patch_1.get_facecolor()
-                            patch_1.set_facecolor((r, g, b, 1))
-                            patch_1.set_linestyle('solid')
-                        if not new_data.empty:
-                            ax_bp = sns.boxplot(new_data['group-rct'], new_data[self.strat_columns[i]].astype('float'), ax = ax_curr, zorder=2)
-                            for patch in ax_bp.artists:
-                                r, g, b, a = patch.get_facecolor()
-                                patch.set_facecolor((r, g, b, .3))
-                                patch.set_linestyle('dashed')
-                            plt.ylim([new_data[self.strat_columns[i]].astype('float').min(), new_data[self.strat_columns[i]].astype('float').max()])
-                        else:
-                            plt.ylim([base_data[self.strat_columns[i]].astype('float').min(), base_data[self.strat_columns[i]].astype('float').max()])
-                    #plt.ylim([0,100])
-                    plt.tight_layout()
-                    i+=1
-            else:
-                ax_curr = axes
-                #print("no attr")
-                if self.strat_columns[i] != 'age':
-                    #print("Case no age")
-                    print(self.sample_p)
+                        bpt = sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], linewidth=2.5, 
+                                    facecolor=(1, 1, 1, 0.2), edgecolor=[".1",".1",".1"], errcolor=".2", ls = 'dashed',zorder=2, ax=ax_curr)
 
-                    df = (100*(pd.crosstab(base_data['group-rct'], base_data[self.strat_columns[i]], normalize='columns')))
-                    df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
-                    
-                    print(self.sample_p)
-                    sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr,zorder=1)
-                    plt.ylim([0,100])
-                    #ax_curr.hlines(y=self.sample_p, xmin=1, xmax=100)#, colors="darkred", linewidth=1, zorder=3)
-                    #ax_curr.axhline(y=self.sample_p, c="darkred", linewidth=1, zorder=3)
-                    
-                    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-                    ax_curr.set_ylabel('Percentage [%]')
-                    if not new_data.empty:
-                        df_pos = (100*(pd.crosstab(new_data['group-rct'],new_data[self.strat_columns[i]], normalize='columns')))
+                        df_pos = (100*(pd.crosstab(new_data['group-rct'], new_data[self.strat_columns[i]], normalize ='columns')))
                         df_pos = df_pos.stack().reset_index().rename(columns={0:'Percentage'}) 
-                        print("DF_POS")
-                        print(df_pos)
-                        sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], ax=ax_curr, ls='dashed',
-                            linewidth=2.5, facecolor=(1, 1, 1, 0))#, errcolor=".2", edgecolor=".2")
-                else:
-                    ax_bp1 = sns.boxplot(base_data['group-rct'], base_data[self.strat_columns[i]].astype('float'), ax=ax_curr, zorder=1)
-                    for patch_1 in ax_bp1.artists:
-                        r, g, b, a = patch_1.get_facecolor()
-                        patch_1.set_facecolor((r, g, b, 1))
-                        patch_1.set_linestyle('solid')
-                    print("Case age")
-                    if not new_data.empty:
-                        ax_bp = sns.boxplot(new_data['group-rct'], new_data[self.strat_columns[i]].astype('float'), ax=ax_curr, zorder=2)
+                        sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], zorder=1,ax=ax_curr)#,
+
+                        bpt.set_ylabel('Percentage',fontsize='18');
+                        #bpt.set_title(self.strat_columns[i], horizontalalignment='center', verticalalignment='top',fontsize=22);
+                        bpt.xaxis.label.set_size(18);
+                        #bpt.set_xlabel('');
+                        bpt.axhline(y=self.sample_p, c="darkred", linewidth=2, zorder=3)
+                        handles, labels = bpt.get_legend_handles_labels();
+                        bpt.legend(handles[1:],['Previous batch']+labels[2:],loc='center left', bbox_to_anchor=(1, 0.5),fontsize=14);
+                        plt.ylim([0,100]);
+
+                        #plt.show()
+                        
+                        
+                    else:
+                        total_data = pd.concat([base_data.copy(),new_data])
+                        total_data.loc[:,'Randomization'] = 'Update'
+                        base_data.loc[:,'Randomization'] = 'Previous'
+                        total_data = pd.concat([total_data,base_data])
+                        ax_bp = sns.boxplot(hue='group-rct', 
+                                            y = self.strat_columns[i],
+                                            x='Randomization',
+                                            data = total_data,
+                                            order = ['Previous','Update'],
+                                            hue_order = ['control','intervention'],
+                                            ax=ax_curr)
                         for patch in ax_bp.artists:
                             r, g, b, a = patch.get_facecolor()
-                            patch.set_facecolor((r, g, b, .3))
-                            patch.set_linestyle('dashed')
-                        plt.ylim([new_data[self.strat_columns[i]].astype('float').min(), new_data[self.strat_columns[i]].astype('float').max()])
+                            #patch.set_facecolor((r, g, b, .3))
+                            #patch.set_linestyle('dashed')
+                        ax_bp.xaxis.label.set_size(18);
+                        ax_bp.yaxis.label.set_size(18);
+                        plt.ylim([new_data[self.strat_columns[i]].astype('float').min(), new_data[self.strat_columns[i]].astype('float').max()+1])
+                        handles,labels = ax_bp.get_legend_handles_labels()
+                        ax_bp.legend(handles,labels,fontsize=14, bbox_to_anchor=(1, 0.5))
+
+            else:
+                for i in range(len(self.strat_columns)):
+                    ax_curr = axes[i]
+                    if self.strat_columns[i]!='age':
+                        df = (100*(pd.crosstab(base_data['group-rct'], base_data[self.strat_columns[i]], normalize='columns')))
+                        df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
+
+                        bpt = sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]],ax=ax_curr)
+                        bpt.set_ylabel('Percentage',fontsize='18');
+                        bpt.axhline(y=self.sample_p, c="darkred", linewidth=2, zorder=3)
+                        handles, labels = bpt.get_legend_handles_labels();
+                        bpt.legend(handles,labels,loc='upper left', bbox_to_anchor=(1, 0.5),fontsize=14);
+                        bpt.xaxis.label.set_size(18);
+                        plt.ylim([0,100]);
+
+                        #plt.show()
                     else:
-                        plt.ylim([base_data[self.strat_columns[i]].astype('float').min(), base_data[self.strat_columns[i]].astype('float').max()])
-                #plt.ylim([0,100])
-                plt.tight_layout()
-                i+=1
+                        ax_bp = sns.boxplot(x='group-rct', 
+                            y = self.strat_columns[i],
+                            data = base_data,
+                            ax=ax_curr)
+                        plt.ylim([base_data[self.strat_columns[i]].astype('float').min(), base_data[self.strat_columns[i]].astype('float').max()+1])
+                        plt.legend([])
+                        ax_bp.xaxis.label.set_size(18);
+                        ax_bp.yaxis.label.set_size(18);
+            #plt.show()
+
+            plt.savefig('Randomization.png')
 
             self.canvas = FigureCanvasTkAgg(fig, self.balanceframe)
             self.canvas.show()

@@ -23,43 +23,46 @@ def stratify(self):
 
     data_set.dropna(axis=1,inplace=True)#,how='all')
     data_set = data_set.apply(lambda x: x.astype(str).str.lower())
+    n = np.ceil((self.sample_p/100.)*len(data_set))
     #print(selected_columns)
     #print(data_set.head())
+
     if "age" in self.strat_columns:
         data_set, age_copy, age_index = group_age(data_set)
-    df = data_set.groupby(selected_columns).count().max(axis=1)
-    # Create exception here
-    df = df.reset_index()
-    #df[df.columns[-1]]
 
-    n = np.ceil((self.sample_p/100.)*len(data_set))
-    #print(n)
-    #print("df")
-    #print(df)
+    if not self.pure_randomization_text:
+        df = data_set.groupby(selected_columns).count().max(axis=1)
+        df = df.reset_index() # Create exception here
 
-    # - How to ensure sample size when rounding like this.
-    df['Size'] = np.ceil(n*(df[df.columns[-1]]/len(data_set)).values)
+        #print(n)
+        #print("df")
+        #print(df)
 
-    # - Ensure that rounding of subgroups does not mess up total balance
-    rows_delete = range(0,len(df))
-    random.shuffle(rows_delete)
+        # - How to ensure sample size when rounding like this.
+        df['Size'] = np.ceil(n*(df[df.columns[-1]]/len(data_set)).values)
 
-    for rows in cycle(rows_delete):
-        if df['Size'].sum() <= n:
-            break
-        else:
-            df.loc[rows,'Size'] -= 1
+        # - Ensure that rounding of subgroups does not mess up total balance
+        rows_delete = range(0,len(df))
+        random.shuffle(rows_delete)
 
-    #print("df size")
-    #print(df)
+        for rows in cycle(rows_delete):
+            if df['Size'].sum() <= n:
+                break
+            else:
+                df.loc[rows,'Size'] -= 1
 
-    # And then cut from the larger groups.
-    i=0
-    ind_list=np.array([])
-    for index,comb in df.iterrows():
-        df_tmp = data_set[(data_set[comb[:-2].index]==comb[:-2].values).all(axis=1)]
-        ind_list = np.append(ind_list,df_tmp.sample(n=df['Size'].iloc[i]).index.values)
-        i += 1
+        #print("df size")
+        #print(df)
+
+        # And then cut from the larger groups.
+        i=0
+        ind_list=np.array([])
+        for index,comb in df.iterrows():
+            df_tmp = data_set[(data_set[comb[:-2].index]==comb[:-2].values).all(axis=1)]
+            ind_list = np.append(ind_list,df_tmp.sample(n=df['Size'].iloc[i]).index.values)
+            i += 1
+    else:
+        ind_list = data_set.sample(n=n).index.values
 
     data_set['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_set.index]
 
@@ -77,12 +80,14 @@ def stratify(self):
 
     name_log = self.filename.rsplit(".")[0]+"|"+",".join(selected_columns)+'-'+str(self.sample_p)+str(dt.datetime.now())+'_log.xlsx'
     writer = pd.ExcelWriter(name_log, engine = 'xlsxwriter')
-    for col in self.strat_columns:
-        if col=="age":
-            pass
-        else:
-            pd.crosstab(data_set[col],data_set['group-rct']).to_excel(writer, sheet_name=col)
-    
+    if not self.pure_randomization_boolean:
+        for col in self.strat_columns:
+            if col == "age":
+                pass
+            else:
+                pd.crosstab(data_set[col], data_set['group-rct']).to_excel(writer, sheet_name=col)
+    else:
+        data_set['group-rct'].value_counts().to_excel(writer, sheet_name=self.pure_randomization_text)
     writer.save()
 
     return self.name
@@ -175,7 +180,7 @@ def update_stratification(self):
         print("ERROOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOR")
     df['Size'] = np.ceil(n*(df[df.columns[-1]]/len(data_temp)).values) # number of individuals in the selected intervention that would make up for a balanced contribution to the covariates
     # Trying to get a more exact sample size.
-    #print("ESTE VALOR")
+    #print("ESTE VALOR")        
     #print(n-df['Size'].sum())
 
     print('Grupos share')
