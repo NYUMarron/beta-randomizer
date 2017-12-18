@@ -169,7 +169,7 @@ class gui(tk.Frame):
         #li.pack()
         #self.var_PureRand = var_PR
         if not self.data.empty:
-            col_possibilities = list(self.data.columns[1:].values)+[self.pure_randomization_text]
+            col_possibilities = [self.pure_randomization_text]+list(self.data.columns[1:].values)
             print(list(self.data.columns[1:].values))
             print(col_possibilities)
             for col in col_possibilities:
@@ -239,7 +239,7 @@ class gui(tk.Frame):
             if ((not self.strat_columns) and (not self.pure_randomization_boolean)):
                 self.empty_strat_variables()
             else:
-                self.sample_p = int(self.second_frame_entry.get())
+                self.sample_p = 100.-int(self.second_frame_entry.get())
                 n = len(self.data)
                 min_n = len(self.strat_columns)*2
                 #print(self.sample_p)
@@ -249,11 +249,14 @@ class gui(tk.Frame):
                         self.warning_toomanycolumns()
                     else:
                         prefix = stratify(self) 
-                        if prefix is None:
-                            self.warning_errorrandomsample()
+                        if ((self.pure_randomization_boolean) and (self.strat_columns)):
+                            self.conflicting_randomizations_warning()
                         else:
-                            self.statusText.set("Output is in file {}".format(prefix))
-                            self.message.configure(fg="black")
+                            if prefix is None:
+                                self.warning_errorrandomsample()
+                            else:
+                                self.statusText.set("Output is in file {}".format(prefix))
+                                self.message.configure(fg="black")
                 else:
                     self.warning_wrongnumber()
 
@@ -296,6 +299,12 @@ class gui(tk.Frame):
 
     def empty_strat_variables(self):
         tkMessageBox.showinfo("Error","Please enter at least one stratifying variable.")
+        #print("At prompt function: "+str(self.warnings))
+        self.message.configure(fg="Black")
+        self.second_frame()
+
+    def conflicting_randomizations_warning(self):
+        tkMessageBox.showinfo("Error","Please choose between either Pure Randomization or a set of variables to stratify.")
         #print("At prompt function: "+str(self.warnings))
         self.message.configure(fg="Black")
         self.second_frame()
