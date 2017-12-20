@@ -137,7 +137,6 @@ class gui(tk.Frame):
             #print(self.data.head())
             #self.secondframe.tkraise()
 
-
     def second_frame(self):        
         #print("Second frame initialized")
 
@@ -152,7 +151,7 @@ class gui(tk.Frame):
 
         tk.Frame(self.secondframe, height=2, bd=1, relief=tk.SUNKEN).pack(fill=tk.X, padx=5, pady=5)
 
-        self.warnings=0
+        self.warnings = 0
         self.var_dict = {}
         self.statusText = tk.StringVar(self)
         self.statusText.set(" ")
@@ -269,7 +268,6 @@ class gui(tk.Frame):
             #    statusText.set("Please enter a whole number.")
             #    message.configure(fg="red")
         
-
     def warning_1(self):
         tkMessageBox.showinfo("Warning","We suggest not to randomize based on parole officers or judges.")
         self.warnings += 1
@@ -299,14 +297,14 @@ class gui(tk.Frame):
 
     def empty_strat_variables(self):
         tkMessageBox.showinfo("Error","Please enter at least one stratifying variable.")
-        #print("At prompt function: "+str(self.warnings))
         self.message.configure(fg="Black")
         self.second_frame()
 
     def conflicting_randomizations_warning(self):
         tkMessageBox.showinfo("Error","Please choose between either Pure Randomization or a set of variables to stratify.")
-        #print("At prompt function: "+str(self.warnings))
         self.message.configure(fg="Black")
+        self.pure_randomization_boolean = False
+        self.strat_columns = []
         self.second_frame()
 
     def button_balance_callback(self):
@@ -362,14 +360,12 @@ class gui(tk.Frame):
                         #bpt.set_title(self.strat_columns[i], horizontalalignment='center', verticalalignment='top',fontsize=22);
                         bpt.xaxis.label.set_size(18);
                         #bpt.set_xlabel('');
-                        bpt.axhline(y=self.sample_p, c="darkred", linewidth=2, zorder=3)
+                        bpt.axhline(y=100.-self.sample_p, c="darkred", linewidth=2, zorder=3)
                         handles, labels = bpt.get_legend_handles_labels();
                         bpt.legend(handles[1:],['Previous batch']+labels[2:],loc='center left', bbox_to_anchor=(1, 0.5),fontsize=14);
                         plt.ylim([0,100]);
 
                         #plt.show()
-                        
-                        
                     else:
                         total_data = pd.concat([base_data.copy(),new_data])
                         total_data.loc[:,'Randomization'] = 'Update'
@@ -401,7 +397,7 @@ class gui(tk.Frame):
 
                         bpt = sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]],ax=ax_curr)
                         bpt.set_ylabel('Percentage',fontsize='18');
-                        bpt.axhline(y=self.sample_p, c="darkred", linewidth=2, zorder=3)
+                        bpt.axhline(y=100.-self.sample_p, c="darkred", linewidth=2, zorder=3)
                         handles, labels = bpt.get_legend_handles_labels();
                         bpt.legend(handles,labels,loc='upper left', bbox_to_anchor=(1, 0.5),fontsize=14);
                         bpt.xaxis.label.set_size(18);
@@ -426,13 +422,11 @@ class gui(tk.Frame):
             self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         tk.Button(self.balanceframe, text="Back to main window",command=lambda:self.main_frame()).pack()#.mainframe.tkraise()).pack()
         tk.Button(self.balanceframe,text="Exit",command=tk.sys.exit).pack()
-        
 
     def first_frame_existing(self):
         
         self.firstframeexisting = tk.Frame(self.master)
         self.firstframeexisting.grid(row=0, column=0, sticky="nsew")
-        #self.firstframeexisting.pack(fill="both", expand=True)
 
         self.var_dict = {}
 
@@ -451,16 +445,15 @@ class gui(tk.Frame):
         self.entry2.pack()
 
         tk.Frame(self.firstframeexisting, height=2, bd=1, relief=tk.SUNKEN).pack(fill=tk.X, padx=5, pady=5)
-        tk.Button(self.firstframeexisting,text="Browse",command=lambda: self.button_browse_callback_2()).pack()    
+        tk.Button(self.firstframeexisting, text="Browse", command=lambda: self.button_browse_callback_2()).pack()    
         tk.Button(self.firstframeexisting, text="Next", command=lambda: self.button_go_callback_2()).pack()
         tk.Button(self.firstframeexisting, text="Back", command=lambda: self.mainframe.tkraise()).pack()
-        tk.Button(self.firstframeexisting,text="Exit",command=tk.sys.exit).pack()    
+        tk.Button(self.firstframeexisting, text="Exit", command=tk.sys.exit).pack()    
         tk.Frame(self.firstframeexisting, height=2, bd=1, relief=tk.SUNKEN).pack(fill=tk.X, padx=5, pady=5)
 
         self.message_ffe = tk.Label(self.firstframeexisting, textvariable=self.statusText_ffe)
         self.message_ffe.pack()
-        
-        
+          
     def button_browse_callback_1(self):
         self.filename1 = tkFileDialog.askopenfilename()
         self.entry1.delete(0, tk.END)
@@ -540,7 +533,13 @@ class gui(tk.Frame):
                         self.sample_p = self.filename1.rsplit("_")[-2]
                         try:
                             strat_columns = self.filename1.rsplit("|")[-1].rsplit("_")[0].rsplit(",")
-                            self.strat_columns = [''.join(c.lower() for c in x if not c.isspace()) for x in strat_columns]
+                            print(self.filename1)
+                            print(strat_columns)
+                            if strat_columns[0] != self.pure_randomization_text:
+                                self.strat_columns = [''.join(c.lower() for c in x if not c.isspace()) for x in strat_columns]
+                            else:
+                                print("PURE RANDOMIZATION IDENTIFIED")
+                                self.pure_randomization_boolean=True
                         except IndexError:
                             self.strat_columns = []
                             pass
@@ -557,8 +556,8 @@ class gui(tk.Frame):
                         if bool(new_categories):
                             self.warning_new_words(new_categories)
                         else:
-
-
+                            print("Before second frame existing")
+                            print(self.pure_randomization_boolean)
                             self.prefix = update_stratification(self)
                             if self.prefix is None:
                                 self.statusText_ffe.set("Error updating sample.")
@@ -594,8 +593,7 @@ class gui(tk.Frame):
                 self.statusText_ffe.set("Error updating sample.")
                 self.message_ffe.configure(fg="red")
             else:
-                self.second_frame_existing()    
-            
+                self.second_frame_existing()         
 
     def second_frame_existing(self):
 
