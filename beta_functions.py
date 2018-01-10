@@ -179,7 +179,7 @@ def update_stratification(self):
         #print("CROSSTAB")
         #print(pd.crosstab(data_set['group-rct'],[pd.Series(data_set[cols]) for cols in selected_columns]))
 
-        #label_pre = pd.crosstab(data_set['group-rct'],[pd.Series(data_set[cols]) for cols in selected_columns]).loc[label].reset_index() 
+        label_pre = pd.crosstab(data_set['group-rct'],[pd.Series(data_set[cols]) for cols in selected_columns]).loc[label].reset_index() 
 
         # desired size
         if label == 'control':
@@ -330,7 +330,7 @@ def update_stratification(self):
         #print(data_new)
 
     else: 
-        #label_pre = data_set['group-rct'].value_counts().loc[label] 
+        label_pre = data_set['group-rct'].value_counts().loc[label] 
 
         # desired size
         if label == 'control':
@@ -376,12 +376,12 @@ def update_stratification(self):
     self.total_data['date'] = pd.to_datetime(self.total_data['date']).dt.date
 
     if not self.pure_randomization_boolean: 
-        self.name = self.filename1.rsplit("|")[0]+"|"+",".join(self.strat_columns)+'_'+todaysdate+'_'+str(int(len(self.total_data)))+'_'+str(int(100-int(self.sample_p)))+'_RCT'+'.xlsx'
-        self.name_static = self.filename1.rsplit("|")[0]+"|"+",".join(self.strat_columns)+'_'+todaysdate+'_'+str(int(len(self.total_data)))+'_'+str(int(100-int(self.sample_p)))+'.xlsx'
+        self.name = self.filename1.rsplit("|")[0]+"|"+",".join(self.strat_columns)+'_'+todaysdate+'_'+str(int(len(self.total_data)))+'_'+str(int(int(self.sample_p)))+'_RCT'+'.xlsx'
+        self.name_static = self.filename1.rsplit("|")[0]+"|"+",".join(self.strat_columns)+'_'+todaysdate+'_'+str(int(len(self.total_data)))+'_'+str(int(int(self.sample_p)))+'.xlsx'
         #self.total_data['date'] = self.total_data['date'].dt.strftime('%M/%d/%Y')
     else:
-        self.name = self.filename1.rsplit("|")[0]+"|"+str(self.pure_randomization_text)+'_'+todaysdate+'_'+str(int(len(self.total_data)))+'_'+str(int(100-int(self.sample_p)))+'_RCT'+'.xlsx'
-        self.name_static = self.filename1.rsplit("|")[0]+"|"+str(self.pure_randomization_text)+'.xlsx'+'_'+todaysdate+'_'+str(int(len(self.total_data)))+'_'+str(int(100-int(self.sample_p)))+'.xlsx'
+        self.name = self.filename1.rsplit("|")[0]+"|"+str(self.pure_randomization_text)+'_'+todaysdate+'_'+str(int(len(self.total_data)))+'_'+str(int(int(self.sample_p)))+'_RCT'+'.xlsx'
+        self.name_static = self.filename1.rsplit("|")[0]+"|"+str(self.pure_randomization_text)+'.xlsx'+'_'+todaysdate+'_'+str(int(len(self.total_data)))+'_'+str(int(int(self.sample_p)))+'.xlsx'
  
     print(data_new)
 

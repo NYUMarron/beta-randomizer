@@ -20,6 +20,7 @@ matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
 import seaborn as sns
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from PIL import ImageTk, Image
 #from matplotlib.figure import Figure
 
 from Tkinter import BooleanVar
@@ -340,7 +341,7 @@ class gui(tk.Frame):
             #print("Has length")
             #print(hasattr(axes, '__iter__'))
             i = 0
-            fig, axes = plt.subplots(len(self.strat_columns),1,figsize=(9,2)) 
+            fig, axes = plt.subplots(len(self.strat_columns),1,figsize=(10,5)) 
 
             if not new_data.empty:
                 for i in range(len(self.strat_columns)):
@@ -360,9 +361,10 @@ class gui(tk.Frame):
                         #bpt.set_title(self.strat_columns[i], horizontalalignment='center', verticalalignment='top',fontsize=22);
                         bpt.xaxis.label.set_size(18);
                         #bpt.set_xlabel('');
-                        bpt.axhline(y=100.-self.sample_p, c="darkred", linewidth=2, zorder=3)
+                        print(self.sample_p)
+                        bpt.axhline(y=100.-float(self.sample_p), c="darkred", linewidth=2, zorder=3)
                         handles, labels = bpt.get_legend_handles_labels();
-                        bpt.legend(handles[1:],['Previous batch']+labels[2:],loc='center left', bbox_to_anchor=(1, 0.5),fontsize=14);
+                        lgd = bpt.legend(handles[1:],['Previous batch']+labels[2:],loc='center left', bbox_to_anchor=(1, 0.5),fontsize=14);
                         plt.ylim([0,100]);
 
                         #plt.show()
@@ -399,7 +401,7 @@ class gui(tk.Frame):
                         bpt.set_ylabel('Percentage',fontsize='18');
                         bpt.axhline(y=100.-self.sample_p, c="darkred", linewidth=2, zorder=3)
                         handles, labels = bpt.get_legend_handles_labels();
-                        bpt.legend(handles,labels,loc='upper left', bbox_to_anchor=(1, 0.5),fontsize=14);
+                        lgd = bpt.legend(handles,labels,loc='upper left', bbox_to_anchor=(1, 0.5),fontsize=14);
                         bpt.xaxis.label.set_size(18);
                         plt.ylim([0,100]);
 
@@ -414,8 +416,20 @@ class gui(tk.Frame):
                         ax_bp.xaxis.label.set_size(18);
                         ax_bp.yaxis.label.set_size(18);
             #plt.show()
+            plt.tight_layout()
+            plt.savefig('Randomization.png', bbox_extra_artists=(lgd,), bbox_inches='tight')
 
-            plt.savefig('Randomization.png')
+
+            path = 'Randomization.png'
+
+            #Creates a Tkinter-compatible photo image, which can be used everywhere Tkinter expects an image object.
+            img = ImageTk.PhotoImage(Image.open(path))
+
+            #The Label widget is a standard Tkinter widget used to display a text or image on the screen.
+            panel = tk.Label(self, image = img)
+
+            #The Pack geometry manager packs widgets in rows or columns.
+            panel.pack(side = "bottom", fill = "both", expand = "yes")
 
             self.canvas = FigureCanvasTkAgg(fig, self.balanceframe)
             self.canvas.show()
@@ -530,7 +544,7 @@ class gui(tk.Frame):
                 if 'group-rct' in data_rct.columns:
                     #print("And we got in")
                     if set(data_rct.columns)-set(['group-rct','date','batch']) ==  set(data_new.columns):
-                        self.sample_p = self.filename1.rsplit("_")[-2]
+                        self.sample_p = float(self.filename1.rsplit("_")[-2])
                         try:
                             strat_columns = self.filename1.rsplit("|")[-1].rsplit("_")[0].rsplit(",")
                             print(self.filename1)
