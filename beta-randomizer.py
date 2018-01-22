@@ -342,10 +342,12 @@ class gui(tk.Frame):
             #print(hasattr(axes, '__iter__'))
             i = 0
             fig, axes = plt.subplots(len(self.strat_columns),1,figsize=(10,5)) 
-
             if not new_data.empty:
                 for i in range(len(self.strat_columns)):
-                    ax_curr = axes[i]
+                    try:
+                        ax_curr = axes[i]
+                    except TypeError:
+                        ax_curr = axes 
                     if self.strat_columns[i]!='age':
 
                         df = (100*(pd.crosstab(base_data['group-rct'], base_data[self.strat_columns[i]], normalize='columns')))
@@ -373,13 +375,16 @@ class gui(tk.Frame):
                         total_data.loc[:,'Randomization'] = 'Update'
                         base_data.loc[:,'Randomization'] = 'Previous'
                         total_data = pd.concat([total_data,base_data])
-                        ax_bp = sns.boxplot(hue='group-rct', 
+                        print("total data")
+                        print(total_data)
+                        total_data[self.strat_columns[i]] = total_data[self.strat_columns[i]].astype(float)
+                        ax_bp = sns.boxplot(hue ='group-rct', 
                                             y = self.strat_columns[i],
-                                            x='Randomization',
+                                            x = 'Randomization',
                                             data = total_data,
                                             order = ['Previous','Update'],
                                             hue_order = ['control','intervention'],
-                                            ax=ax_curr)
+                                            ax = ax_curr)
                         for patch in ax_bp.artists:
                             r, g, b, a = patch.get_facecolor()
                             #patch.set_facecolor((r, g, b, .3))
@@ -392,7 +397,10 @@ class gui(tk.Frame):
 
             else:
                 for i in range(len(self.strat_columns)):
-                    ax_curr = axes[i]
+                    try:
+                        ax_curr = axes[i]
+                    except TypeError:
+                        ax_curr = axes
                     if self.strat_columns[i]!='age':
                         df = (100*(pd.crosstab(base_data['group-rct'], base_data[self.strat_columns[i]], normalize='columns')))
                         df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
@@ -417,8 +425,10 @@ class gui(tk.Frame):
                         ax_bp.yaxis.label.set_size(18);
             #plt.show()
             plt.tight_layout()
-            plt.savefig('Randomization.png', bbox_extra_artists=(lgd,), bbox_inches='tight')
-
+            try:
+                plt.savefig('Randomization.png', bbox_extra_artists=(lgd,), bbox_inches='tight')
+            except UnboundLocalError:
+                plt.savefig('Randomization.png', bbox_inches='tight')
 
             path = 'Randomization.png'
 
