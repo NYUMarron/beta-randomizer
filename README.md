@@ -2,6 +2,10 @@
 
 Cross-platform generator of stratified random samples for Randomized Control Trials (RCTs).
 
+Inline-style: 
+![alt text](https://github.com/NYUMarron/beta-randomizer/blob/master/beta-randomizer_screenshot.png "Sample - balance")
+
+
 ## Inputs
 
 * .csv file with typical RCT headers: Case number, DOB, etc.
@@ -11,3 +15,4 @@ Cross-platform generator of stratified random samples for Randomized Control Tri
 ## Outputs
 
 Standalone files are generated through _pyinstaller_. 
+
