@@ -2,8 +2,9 @@
 
 Cross-platform generator of stratified random samples for Randomized Control Trials (RCTs).
 
-Inline-style: 
+
 ![alt text](https://github.com/NYUMarron/beta-randomizer/blob/master/beta-randomizer_screenshot.png "Sample - balance")
+
 
 
 ## Inputs
