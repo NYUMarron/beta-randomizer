@@ -325,12 +325,12 @@ class gui(tk.Frame):
         self.label.pack()
 
         try:
-            tk.Label(self.balanceframe, text="Target control group size: "+str(int(self.sample_p))+" % of population").pack()
-            tk.Label(self.balanceframe, text="Control group size: "+str(base_data['group-rct'].value_counts().loc['control'])+'('+str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['control'],2))+' %)').pack()
-            tk.Label(self.balanceframe, text="Intervention group size: "+str(base_data['group-rct'].value_counts().loc['intervention'])+ '('+ str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['intervention'],2))+' %)').pack()
+            tk.Label(self.balanceframe, text="Target control group size: "+str(int(self.sample_p))+"% of population").pack()
+            tk.Label(self.balanceframe, text="Control group size: "+str(base_data['group-rct'].value_counts().loc['control'])+'('+str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['control'],2))+'%)').pack()
+            tk.Label(self.balanceframe, text="Intervention group size: "+str(base_data['group-rct'].value_counts().loc['intervention'])+ '('+ str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['intervention'],2))+'%)').pack()
             if not new_data.empty:
-                tk.Label(self.balanceframe, text="New Control group size: "+str(new_data['group-rct'].value_counts().loc['control'])+ '('+ str(round(100*new_data['group-rct'].value_counts(normalize=True).loc['control'],2))+' %)').pack()
-                tk.Label(self.balanceframe, text="New Intervention group size: "+str(new_data['group-rct'].value_counts().loc['intervention'])+ '('+ str(round(100*new_data['group-rct'].value_counts(normalize=True).loc['intervention'],2))+' %)').pack()
+                tk.Label(self.balanceframe, text="New Control group size: "+str(new_data['group-rct'].value_counts().loc['control'])+ '('+ str(round(100*new_data['group-rct'].value_counts(normalize=True).loc['control'],2))+'%)').pack()
+                tk.Label(self.balanceframe, text="New Intervention group size: "+str(new_data['group-rct'].value_counts().loc['intervention'])+ '('+ str(round(100*new_data['group-rct'].value_counts(normalize=True).loc['intervention'],2))+'%)').pack()
         except KeyError:
             pass
 
@@ -340,9 +340,10 @@ class gui(tk.Frame):
         if len(self.strat_columns)>0:
             #print("Has length")
             #print(hasattr(axes, '__iter__'))
-            i = 0
+            new_legends = 0
             fig, axes = plt.subplots(len(self.strat_columns),1,figsize=(10,5)) 
             if not new_data.empty:
+                
                 for i in range(len(self.strat_columns)):
                     try:
                         ax_curr = axes[i]
@@ -365,8 +366,13 @@ class gui(tk.Frame):
                         print(self.sample_p)
                         bpt.axhline(y=100.-float(self.sample_p), c="darkred", linewidth=2, zorder=3)
                         handles, labels = bpt.get_legend_handles_labels();
-                        lgd = bpt.legend(handles[1:],['Previous batch']+labels[2:],loc='center left', bbox_to_anchor=(1, 0.5), fontsize=14);
+                        if new_legends < 1:
+                            lgd_a = bpt.legend(handles[1:],['Previous batch']+labels[2:],loc='center left', bbox_to_anchor=(1, 0.5), fontsize=14);
+                        else:
+                            lgd = bpt.legend([],[], loc='upper left', bbox_to_anchor=(1, 0.5), fontsize=14)
                         plt.ylim([0,100]);
+                        new_legends += 1
+
 
                         #plt.show()
                     else:
@@ -390,9 +396,11 @@ class gui(tk.Frame):
                             #patch.set_linestyle('dashed')
                         ax_bp.xaxis.label.set_size(18);
                         ax_bp.yaxis.label.set_size(18);
+                        ax_bp.set_xlabel('');
+                        plt.legend([]);
                         plt.ylim([new_data[self.strat_columns[i]].astype('float').min(), new_data[self.strat_columns[i]].astype('float').max()+1])
                         handles,labels = ax_bp.get_legend_handles_labels()
-                        ax_bp.legend(handles,labels,fontsize=14, bbox_to_anchor=(1, 0.5))
+                        lgd = ax_bp.legend([],[], loc='upper left', bbox_to_anchor=(1, 0.5), fontsize=14)
 
             else:
                 for i in range(len(self.strat_columns)):
@@ -404,49 +412,43 @@ class gui(tk.Frame):
                         df = (100*(pd.crosstab(base_data['group-rct'], base_data[self.strat_columns[i]], normalize='columns')))
                         df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
 
-                        bpt = sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]],ax=ax_curr)
+                        bpt = sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], ax=ax_curr)
                         bpt.set_ylabel('Percentage',fontsize='18');
                         bpt.axhline(y=100.-self.sample_p, c="darkred", linewidth=2, zorder=3)
                         handles, labels = bpt.get_legend_handles_labels();
-                        lgd = bpt.legend(handles,labels,loc='upper left', bbox_to_anchor=(1, 0.5),fontsize=14)
+                        if new_legends < 1:
+                            lgd_a = bpt.legend(handles,labels, loc='upper left', bbox_to_anchor=(1, 0.5), fontsize=14)
+                        else:
+                            lgd = bpt.legend([],[], loc='upper left', bbox_to_anchor=(1, 0.5), fontsize=14)
+
                         bpt.xaxis.label.set_size(18);
                         plt.ylim([0,100]);
-
-                        #plt.show()
+                        new_legends += 1
                     else:
                         ax_bp = sns.boxplot(x='group-rct', 
                                             y = self.strat_columns[i],
                                             data = base_data,
                                             ax=ax_curr)
                         plt.ylim([base_data[self.strat_columns[i]].astype('float').min(), base_data[self.strat_columns[i]].astype('float').max()+1])
-                        plt.legend([])
+                        lgd = ax_bp.legend([],[], loc='upper left', bbox_to_anchor=(1, 0.5), fontsize=14)
+                        ax_bp.set_xlabel('');
                         ax_bp.xaxis.label.set_size(18);
                         ax_bp.yaxis.label.set_size(18);
-            #plt.show()
+            
             plt.tight_layout()
             try:
-                plt.savefig('Randomization.png', bbox_extra_artists=(lgd,), bbox_inches='tight')
+                plt.savefig('Randomization.png', bbox_extra_artists=(lgd_a,), bbox_inches='tight')
             except UnboundLocalError:
                 plt.savefig('Randomization.png', bbox_inches='tight')
 
             path = 'Randomization.png'
 
             #image_pil = .resize((100,100)) #<-- resize images here    
-
-            #Creates a Tkinter-compatible photo image, which can be used everywhere Tkinter expects an image object.
             img = ImageTk.PhotoImage(Image.open(path))
 
-            #The Label widget is a standard Tkinter widget used to display a text or image on the screen.
             self.plot = tk.Label(self.balanceframe, image = img)
             self.plot.image = img
-            self.plot.pack(side = "bottom", fill = "both", expand = "yes")
-
-            #The Pack geometry manager packs widgets in rows or columns.
-            #panel.pack()#side = "bottom", fill = "both", expand = "yes")
-
-            #self.canvas = FigureCanvasTkAgg(fig, self.balanceframe)
-            #self.canvas.show()
-            #self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+            self.plot.pack()#side = "bottom", fill = "both", expand = "yes")
 
         else:
             tk.Label(self.balanceframe, text="Pure randomization selected. No variables to compare.",font=(26)).pack()
