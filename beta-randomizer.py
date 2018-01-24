@@ -9,11 +9,11 @@ Author: S. Arango-Franco - sarangof@nyu.edu.
 """
 
 import Tkinter as tk
+from Tkinter import BooleanVar,StringVar
 import tkFileDialog
 import tkMessageBox
 import pandas as pd 
 import datetime as dt
-import tkMessageBox
 from beta_functions import *
 import matplotlib
 matplotlib.use("TkAgg")
@@ -23,8 +23,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import ImageTk, Image
 #from matplotlib.figure import Figure
 
-from Tkinter import BooleanVar
-from Tkinter import StringVar
+
 from datetime import datetime
 
 sns.set_style("whitegrid")
@@ -326,6 +325,7 @@ class gui(tk.Frame):
         self.label.pack()
 
         try:
+            tk.Label(self.balanceframe, text="Target control group size: "+str(int(self.sample_p))+" % of population").pack()
             tk.Label(self.balanceframe, text="Control group size: "+str(base_data['group-rct'].value_counts().loc['control'])+'('+str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['control'],2))+' %)').pack()
             tk.Label(self.balanceframe, text="Intervention group size: "+str(base_data['group-rct'].value_counts().loc['intervention'])+ '('+ str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['intervention'],2))+' %)').pack()
             if not new_data.empty:
@@ -349,7 +349,6 @@ class gui(tk.Frame):
                     except TypeError:
                         ax_curr = axes 
                     if self.strat_columns[i]!='age':
-
                         df = (100*(pd.crosstab(base_data['group-rct'], base_data[self.strat_columns[i]], normalize='columns')))
                         df = df.stack().reset_index().rename(columns={0:'Percentage'}) 
                         bpt = sns.barplot(hue=df['group-rct'], y=df['Percentage'], x=df[self.strat_columns[i]], linewidth=2.5, 
@@ -366,7 +365,7 @@ class gui(tk.Frame):
                         print(self.sample_p)
                         bpt.axhline(y=100.-float(self.sample_p), c="darkred", linewidth=2, zorder=3)
                         handles, labels = bpt.get_legend_handles_labels();
-                        lgd = bpt.legend(handles[1:],['Previous batch']+labels[2:],loc='center left', bbox_to_anchor=(1, 0.5),fontsize=14);
+                        lgd = bpt.legend(handles[1:],['Previous batch']+labels[2:],loc='center left', bbox_to_anchor=(1, 0.5), fontsize=14);
                         plt.ylim([0,100]);
 
                         #plt.show()
@@ -409,16 +408,16 @@ class gui(tk.Frame):
                         bpt.set_ylabel('Percentage',fontsize='18');
                         bpt.axhline(y=100.-self.sample_p, c="darkred", linewidth=2, zorder=3)
                         handles, labels = bpt.get_legend_handles_labels();
-                        lgd = bpt.legend(handles,labels,loc='upper left', bbox_to_anchor=(1, 0.5),fontsize=14);
+                        lgd = bpt.legend(handles,labels,loc='upper left', bbox_to_anchor=(1, 0.5),fontsize=14)
                         bpt.xaxis.label.set_size(18);
                         plt.ylim([0,100]);
 
                         #plt.show()
                     else:
                         ax_bp = sns.boxplot(x='group-rct', 
-                            y = self.strat_columns[i],
-                            data = base_data,
-                            ax=ax_curr)
+                                            y = self.strat_columns[i],
+                                            data = base_data,
+                                            ax=ax_curr)
                         plt.ylim([base_data[self.strat_columns[i]].astype('float').min(), base_data[self.strat_columns[i]].astype('float').max()+1])
                         plt.legend([])
                         ax_bp.xaxis.label.set_size(18);
@@ -432,18 +431,26 @@ class gui(tk.Frame):
 
             path = 'Randomization.png'
 
+            #image_pil = .resize((100,100)) #<-- resize images here    
+
             #Creates a Tkinter-compatible photo image, which can be used everywhere Tkinter expects an image object.
             img = ImageTk.PhotoImage(Image.open(path))
 
             #The Label widget is a standard Tkinter widget used to display a text or image on the screen.
-            panel = tk.Label(self, image = img)
+            self.plot = tk.Label(self.balanceframe, image = img)
+            self.plot.image = img
+            self.plot.pack(side = "bottom", fill = "both", expand = "yes")
 
             #The Pack geometry manager packs widgets in rows or columns.
-            panel.pack(side = "bottom", fill = "both", expand = "yes")
+            #panel.pack()#side = "bottom", fill = "both", expand = "yes")
 
-            self.canvas = FigureCanvasTkAgg(fig, self.balanceframe)
-            self.canvas.show()
-            self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+            #self.canvas = FigureCanvasTkAgg(fig, self.balanceframe)
+            #self.canvas.show()
+            #self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+        else:
+            tk.Label(self.balanceframe, text="Pure randomization selected. No variables to compare.",font=(26)).pack()
+
         tk.Button(self.balanceframe, text="Back to main window",command=lambda:self.main_frame()).pack()#.mainframe.tkraise()).pack()
         tk.Button(self.balanceframe,text="Exit",command=tk.sys.exit).pack()
 
