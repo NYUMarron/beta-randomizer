@@ -325,12 +325,14 @@ class gui(tk.Frame):
         self.label.pack()
 
         try:
+            tk.Label(self.balanceframe, text="").pack()
             tk.Label(self.balanceframe, text="Target control group size: "+str(int(self.sample_p))+"% of population").pack()
             tk.Label(self.balanceframe, text="Control group size: "+str(base_data['group-rct'].value_counts().loc['control'])+'('+str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['control'],2))+'%)').pack()
             tk.Label(self.balanceframe, text="Intervention group size: "+str(base_data['group-rct'].value_counts().loc['intervention'])+ '('+ str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['intervention'],2))+'%)').pack()
             if not new_data.empty:
                 tk.Label(self.balanceframe, text="New Control group size: "+str(new_data['group-rct'].value_counts().loc['control'])+ '('+ str(round(100*new_data['group-rct'].value_counts(normalize=True).loc['control'],2))+'%)').pack()
                 tk.Label(self.balanceframe, text="New Intervention group size: "+str(new_data['group-rct'].value_counts().loc['intervention'])+ '('+ str(round(100*new_data['group-rct'].value_counts(normalize=True).loc['intervention'],2))+'%)').pack()
+            tk.Label(self.balanceframe, text="").pack()
         except KeyError:
             pass
 
