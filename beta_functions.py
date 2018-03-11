@@ -5,7 +5,7 @@ import numpy as np
 import datetime as dt
 import random
 from itertools import cycle
-import os
+#import os
 
 def stratify(self):
     """ 
