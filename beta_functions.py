@@ -62,7 +62,9 @@ def stratify(self):
             ind_list = np.append(ind_list,df_tmp.sample(n=df['Size'].iloc[i]).index.values)
             i += 1
     else:
-        ind_list = data_set.sample(n=n).index.values
+        print("index")
+        print(n)
+        ind_list = data_set.sample(n=int(n)).index.values
 
     data_set['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_set.index]
 
@@ -285,7 +287,7 @@ def update_stratification(self):
                 #print(df['Missing'].loc[index])
                 if ss > 0:
                     print(ss)
-                    ind_list = np.append(ind_list, df_tmp.sample(n=ss).index.values)
+                    ind_list = np.append(ind_list, df_tmp.sample(n=int(ss)).index.values)
                     assigned += ss
                 else:
                     pass
@@ -304,7 +306,7 @@ def update_stratification(self):
 
             elegible = data_temp[(data_temp['group-rct']=='')&(data_temp['date']==todaysdate)]
             print(elegible)
-            available = min(diff-assigned,len(data_temp[data_temp['date']==todaysdate]))
+            available = min(int(diff)-assigned,len(data_temp[data_temp['date']==todaysdate]))
             print(available)
 
             if len(elegible) >= available:
@@ -346,8 +348,9 @@ def update_stratification(self):
         print(len(data_new))
         print(n)
         print(p)
+        print(label)
         print(data_set['group-rct'].value_counts().loc[label])
-        ind_list = data_new.sample(n-data_set['group-rct'].value_counts().loc[label]).index.values
+        ind_list = data_new.sample(int(n)-int(data_set['group-rct'].value_counts().loc[label])).index.values
         #data_temp = data_new.append(data_set.ix[:, :])
         # Trying to get a more exact sample size.
         #print("ESTE VALOR")        
