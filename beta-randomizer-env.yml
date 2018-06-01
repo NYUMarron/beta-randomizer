@@ -1,0 +1,40 @@
+name: beta-randomizer
+channels:
+  - anaconda-fusion
+  - conda-forge
+  - defaults
+dependencies:
+  - ca-certificates=2018.4.16=0
+  - certifi=2018.4.16=py27_0
+  - ncurses=5.9=10
+  - openssl=1.0.2o=0
+  - pip=9.0.3=py27_0
+  - python=2.7.15=0
+  - readline=7.0=0
+  - setuptools=39.2.0=py27_0
+  - sqlite=3.20.1=2
+  - tk=8.6.7=0
+  - wheel=0.31.0=py27_0
+  - zlib=1.2.11=h470a237_3
+  - pip:
+    - backports.functools-lru-cache==1.5
+    - cycler==0.10.0
+    - et-xmlfile==1.0.1
+    - jdcal==1.4
+    - kiwisolver==1.0.1
+    - matplotlib==2.2.2
+    - numpy==1.14.3
+    - openpyxl==2.5.3
+    - pandas==0.23.0
+    - pillow==5.1.0
+    - pyparsing==2.2.0
+    - python-dateutil==2.7.3
+    - pytz==2018.4
+    - scipy==1.1.0
+    - seaborn==0.8.1
+    - six==1.11.0
+    - subprocess32==3.5.1
+    - xlrd==1.1.0
+    - xlsxwriter==1.0.5
+prefix: /Users/sarangof/anaconda/envs/beta-randomizer
+
