@@ -8,6 +8,8 @@ Author: S. Arango-Franco - sarangof@nyu.edu.
 
 """
 
+[u'Trial #', u'Date Consent Signed', u'Sentenced or Detained', u'Risk Level', u'Age', u'Sex', u'Race', u'Hispanic', u'Mentoring']
+
 import Tkinter as tk
 from Tkinter import BooleanVar,StringVar
 import tkFileDialog
@@ -24,15 +26,15 @@ from PIL import ImageTk, Image
 #from matplotlib.figure import Figure
 
 
-from datetime import datetime
+#from datetime import datetime
 
 sns.set_style("whitegrid")
 
 def standardize_columns(data):
-    for cols in data.columns:
-        if not np.issubdtype(data[cols].dtype, np.number):
-            data[cols] = data[cols].str.strip()
-            data[cols] = data[cols].map(lambda x: x.replace('-', ''))
+    df_str_columns = data.select_dtypes(exclude=[np.datetime64,np.number])
+    for cols in df_str_columns.columns:
+        data[cols] = data[cols].str.strip()
+        data[cols] = data[cols].map(lambda x: str(x).replace('-', ''))
     return data
 
 def clear_variables(self):
@@ -141,7 +143,7 @@ class gui(tk.Frame):
         #print("Second frame initialized")
 
         def cb(self):
-            print("came in")
+            #print("came in")
             for it in self.var_dict:
                 it.config(state=DISABLED)
             self.refresh()
@@ -169,8 +171,8 @@ class gui(tk.Frame):
         #self.var_PureRand = var_PR
         if not self.data.empty:
             col_possibilities = [self.pure_randomization_text]+list(self.data.columns[1:].values)
-            print(list(self.data.columns[1:].values))
-            print(col_possibilities)
+            #print(list(self.data.columns[1:].values))
+            #print(col_possibilities)
             for col in col_possibilities:
                 #print("something is happening")
                 if ("ccis" in col) or ("name" in col) or ("Name" in col) or ("Surname" in col):
@@ -365,7 +367,7 @@ class gui(tk.Frame):
                         #bpt.set_title(self.strat_columns[i], horizontalalignment='center', verticalalignment='top',fontsize=22);
                         bpt.xaxis.label.set_size(18);
                         #bpt.set_xlabel('');
-                        print(self.sample_p)
+                        #print(self.sample_p)
                         bpt.axhline(y=100.-float(self.sample_p), c="darkred", linewidth=2, zorder=3)
                         handles, labels = bpt.get_legend_handles_labels();
                         if new_legends < 1:
@@ -382,8 +384,8 @@ class gui(tk.Frame):
                         total_data.loc[:,'Randomization'] = 'Update'
                         base_data.loc[:,'Randomization'] = 'Previous'
                         total_data = pd.concat([total_data,base_data])
-                        print("total data")
-                        print(total_data)
+                        #print("total data")
+                        #print(total_data)
                         total_data[self.strat_columns[i]] = total_data[self.strat_columns[i]].astype(float)
                         ax_bp = sns.boxplot(hue ='group-rct', 
                                             y = self.strat_columns[i],
@@ -524,6 +526,8 @@ class gui(tk.Frame):
                 data_rct.dropna(axis=0,how='all',inplace=True)
 
                 data_rct.columns = map(str, data_rct.columns)
+                #print("data_rct")
+                #print(data_rct.columns)
                 available_columns = []
                 try:
                     available_columns = list(set(data_rct.columns.values) - set(['group-rct','date','batch']))
@@ -549,8 +553,11 @@ class gui(tk.Frame):
                 data_new.dropna(axis=1,how='all',inplace=True)
                 data_new.dropna(axis=0,how='all',inplace=True,subset=data_new.columns[2:])
                 # remove upper case.
-                data_new = data_new.apply(lambda x: x.astype(str).str.lower())
+                print("data_new")
+                print(data_new)
                 data_new = standardize_columns(data_new)
+                data_new = data_new.apply(lambda x: x.astype(str).str.lower())
+                
 
                 data_new.columns = [''.join(str.lower(str(e)) for e in string if e.isalnum()) for string in data_new.columns]
                 # replace all special characters.
@@ -567,13 +574,14 @@ class gui(tk.Frame):
                     if set(data_rct.columns)-set(['group-rct','date','batch']) ==  set(data_new.columns):
                         self.sample_p = float(self.filename1.rsplit("_")[-2])
                         try:
-                            strat_columns = self.filename1.rsplit("|")[-1].rsplit("_")[0].rsplit(",")
-                            print(self.filename1)
-                            print(strat_columns)
+                            if len(self.filename1.rsplit("|")) <=1:
+                                self.statusText_ffe.set("Please check the naming structure of the mother file.")
+                            else:
+                                strat_columns = self.filename1.rsplit("|")[-1].rsplit("_")[0].rsplit(",")
                             if strat_columns[0] != self.pure_randomization_text:
                                 self.strat_columns = [''.join(c.lower() for c in x if not c.isspace()) for x in strat_columns]
                             else:
-                                print("PURE RANDOMIZATION IDENTIFIED")
+                                #print("PURE RANDOMIZATION IDENTIFIED")
                                 self.pure_randomization_boolean=True
                         except IndexError:
                             self.strat_columns = []
@@ -581,18 +589,19 @@ class gui(tk.Frame):
                         #print("Second window should pop")
                         common_columns = list(set(data_rct.columns[1:]) & set(data_new.columns[1:]))
                         new_categories = {}
-                        for col in common_columns:
+                        for col in self.strat_columns:
                             if col!='age':
                                 new_values = set(data_new[col]) - set(data_rct[col])
+
                                 if new_values:
-                                    print("NEW VALUES")
+                                    #print("NEW VALUES")
                                     new_categories[col] = new_values
 
                         if bool(new_categories):
                             self.warning_new_words(new_categories)
                         else:
-                            print("Before second frame existing")
-                            print(self.pure_randomization_boolean)
+                            #print("Before second frame existing")
+                            #print(self.pure_randomization_boolean)
                             self.prefix = update_stratification(self)
                             if self.prefix is None:
                                 self.statusText_ffe.set("Error updating sample.")
@@ -611,7 +620,7 @@ class gui(tk.Frame):
             #pass
 
     def warning_new_words(self,new_categories):
-        print(new_categories)
+        #print(new_categories)
         for k,value in new_categories.iteritems():
             for nvals in value:
                 result = tkMessageBox.askyesno("Warning","The column '"+str(k)+"' has a new value "+str(nvals)+'. Do you accept it?')

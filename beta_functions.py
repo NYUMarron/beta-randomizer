@@ -310,7 +310,7 @@ def update_stratification(self):
             print(available)
 
             if len(elegible) >= available:
-                ind_list_b = elegible.sample(available).index.values
+                ind_list_b = elegible.sample(int(available)).index.values
                 ind_list   = np.append(ind_list,ind_list_b)
             else:
                 ind_list_b = elegible.index.values
