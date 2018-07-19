@@ -553,8 +553,8 @@ class gui(tk.Frame):
                 data_new.dropna(axis=1,how='all',inplace=True)
                 data_new.dropna(axis=0,how='all',inplace=True,subset=data_new.columns[2:])
                 # remove upper case.
-                print("data_new")
-                print(data_new)
+                #print("data_new")
+                #print(data_new)
                 data_new = standardize_columns(data_new)
                 data_new = data_new.apply(lambda x: x.astype(str).str.lower())
                 
