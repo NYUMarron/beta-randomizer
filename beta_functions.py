@@ -5,22 +5,18 @@ import numpy as np
 import datetime as dt
 import random
 from itertools import cycle
-#import os
 
 def stratify(self):
     """ 
     Stratified random sampling
     SPECIAL CASE, WHEN THERE IS ONLY ONE STRATUM PER INDIVIDUAL.
-    RAISE MANY ERRORS.
     * The test_size = 1 should be greater or equal to the number of classes = 5
-    * 
     * Keep this in mind: https://github.com/scikit-learn/scikit-learn/blob/14031f6/sklearn/model_selection/_split.py#L1190
     """
 
     #data = pd.read_csv('Randomization_short.csv') #'NYU - Franklin JIYA to randomizecaseloads.xlsx'
     data_set = self.data
     selected_columns = self.strat_columns
-
     data_set.dropna(axis=1,inplace=True)#,how='all')
     data_set = data_set.apply(lambda x: x.astype(str).str.lower())
     n = np.ceil((self.sample_p/100.)*len(data_set))
@@ -31,7 +27,9 @@ def stratify(self):
         data_set, age_copy, age_index = group_age(data_set)
 
     if not self.pure_randomization_text:
+        # - size of each group
         df = data_set.groupby(selected_columns).count().max(axis=1)
+        #df = data_set.groupby(selected_columns).size() # Would this work?
         df = df.reset_index() # Create exception here
 
         #print(n)
@@ -62,8 +60,8 @@ def stratify(self):
             ind_list = np.append(ind_list,df_tmp.sample(n=df['Size'].iloc[i]).index.values)
             i += 1
     else:
-        print("index")
-        print(n)
+        #print("index")
+        #print(n)
         ind_list = data_set.sample(n=int(n)).index.values
 
     data_set['group-rct'] = ["intervention" if x in ind_list else "control" for x in data_set.index]
@@ -98,7 +96,6 @@ def stratify(self):
 
     return self.name
 
-
 def update_stratification(self):
     """ 
     Stratified random sampling
@@ -132,6 +129,12 @@ def update_stratification(self):
         pass
 
     data_new = self.data_new
+
+
+    #data_set=pd.read_excel('ICAN Texting Trial_Randomization List_6-27-18_V2|risklevel,age,sex,race,mentoring,sentencedordetained_2018-07-18_31_50_RCT.xlsx')
+    #data_new=pd.read_excel('ICAN Texting Trial_Randomization List_7-5-18.xlsx')
+
+
     data_new.dropna(axis=0,inplace=True,how='all',subset=data_new.columns[2:])
     data_new.dropna(axis=1,inplace=True,how='all')
     try:
@@ -185,7 +188,7 @@ def update_stratification(self):
 
         # desired size
         if label == 'control':
-            n = np.ceil(p*len(data_temp)) 
+            n = np.ceil(p*len(data_temp))
         elif label == 'intervention':
             n = np.ceil((1-p)*len(data_temp)) 
         else:
@@ -204,7 +207,7 @@ def update_stratification(self):
         print("initial_n: "+str(initial_n))
         print("label: "+str(label))
         print("Actual assignation: "+str(df['Size'].sum()))
-        
+
         rows_delete = range(0,len(df))
         random.shuffle(rows_delete)
 
@@ -217,10 +220,10 @@ def update_stratification(self):
         print(n-initial_n)
         print(df['Size'].sum())
         if (n) < df['Size'].sum(): #- initial_n
-            print("Sobran individuos por aleatorizar")
+            #print("Sobran individuos por aleatorizar")
             deleted_ns = 0  
             for rows in cycle(rows_delete):
-                print("Entramos al ciclo")
+                #print("Entramos al ciclo")
                 if df.loc[rows,'Size'] > 0:
                     #((1/p)*df['Size'].sum())-n:
                     print(deleted_ns)
@@ -235,7 +238,7 @@ def update_stratification(self):
                         print(df)
         elif (n) > df['Size'].sum(): #- initial_n
             print("Faltan individuos por aleatorizar")
-            #print("BUUUUUUUUUUUU - I would be surprised if this were not impossible. ")
+            print("BUUUUUUUUUUUU - I would be surprised if this were not impossible. ")
             added_ns = 0 
             for rows in cycle(rows_delete):
                 if df.loc[rows,'Size'] > 0:
@@ -303,8 +306,8 @@ def update_stratification(self):
         print(len(set(ind_list)))
         # Arreglando esa colita
         if assigned < diff:
-
-            elegible = data_temp[(data_temp['group-rct']=='')&(data_temp['date']==todaysdate)]
+            print("Assigned are less assigned than the desired people to assign")
+            elegible = data_temp[(~(data_temp.index.isin(ind_list)))&(data_temp['group-rct']=='')&(data_temp['date']==todaysdate)]
             print(elegible)
             available = min(int(diff)-assigned,len(data_temp[data_temp['date']==todaysdate]))
             print(available)
@@ -373,7 +376,7 @@ def update_stratification(self):
 
     todaysdate = str(dt.datetime.today().date())
     data_new['batch'] = int(np.max(data_set.batch.value_counts().index.astype('int').values)) + int(1)
-    
+
     self.total_data = data_new.append(data_set)
     self.total_data['age'] = age_copy
     self.total_data['date'] = pd.to_datetime(self.total_data['date']).dt.date

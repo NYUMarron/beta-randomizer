@@ -34,7 +34,10 @@ def standardize_columns(data):
     df_str_columns = data.select_dtypes(exclude=[np.datetime64,np.number])
     for cols in df_str_columns.columns:
         data[cols] = data[cols].str.strip()
-        data[cols] = data[cols].map(lambda x: str(x).replace('-', ''))
+        try:
+            data[cols] = data[cols].map(lambda x: str(x).replace('-', ''))
+        except UnicodeEncodeError:
+            data[cols] = data[cols].map(lambda x: x.replace('-', ''))
     return data
 
 def clear_variables(self):
@@ -558,7 +561,6 @@ class gui(tk.Frame):
                 data_new = standardize_columns(data_new)
                 data_new = data_new.apply(lambda x: x.astype(str).str.lower())
                 
-
                 data_new.columns = [''.join(str.lower(str(e)) for e in string if e.isalnum()) for string in data_new.columns]
                 # replace all special characters.
                 data_new.replace(r'[,\"\']','', regex=True).replace(r'\s*([^\s]+)\s*', r'\1', regex=True, inplace=True)
@@ -573,6 +575,7 @@ class gui(tk.Frame):
                     #print("And we got in")
                     if set(data_rct.columns)-set(['group-rct','date','batch']) ==  set(data_new.columns):
                         self.sample_p = float(self.filename1.rsplit("_")[-2])
+                        print(self.sample_p)
                         try:
                             if len(self.filename1.rsplit("|")) <=1:
                                 self.statusText_ffe.set("Please check the naming structure of the mother file.")
