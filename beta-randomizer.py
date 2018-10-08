@@ -23,6 +23,7 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import ImageTk, Image
+from scipy import stats
 #from matplotlib.figure import Figure
 
 
@@ -332,11 +333,11 @@ class gui(tk.Frame):
         try:
             tk.Label(self.balanceframe, text="").pack()
             tk.Label(self.balanceframe, text="Target control group size: "+str(int(self.sample_p))+"% of population").pack()
-            tk.Label(self.balanceframe, text="Control group size: "+str(base_data['group-rct'].value_counts().loc['control'])+'('+str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['control'],2))+'%)').pack()
-            tk.Label(self.balanceframe, text="Intervention group size: "+str(base_data['group-rct'].value_counts().loc['intervention'])+ '('+ str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['intervention'],2))+'%)').pack()
+            tk.Label(self.balanceframe, text="Control group size: "+str(base_data['group-rct'].value_counts().loc['control'])+'('+str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['control'],0))+'%)').pack()
+            tk.Label(self.balanceframe, text="Intervention group size: "+str(base_data['group-rct'].value_counts().loc['intervention'])+ '('+ str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['intervention'],0))+'%)').pack()
             if not new_data.empty:
-                tk.Label(self.balanceframe, text="New Control group size: "+str(new_data['group-rct'].value_counts().loc['control'])+ '('+ str(round(100*new_data['group-rct'].value_counts(normalize=True).loc['control'],2))+'%)').pack()
-                tk.Label(self.balanceframe, text="New Intervention group size: "+str(new_data['group-rct'].value_counts().loc['intervention'])+ '('+ str(round(100*new_data['group-rct'].value_counts(normalize=True).loc['intervention'],2))+'%)').pack()
+                tk.Label(self.balanceframe, text="New Control group size: "+str(new_data['group-rct'].value_counts().loc['control'])+ '('+ str(round(100*new_data['group-rct'].value_counts(normalize=True).loc['control'],0))+'%)').pack()
+                tk.Label(self.balanceframe, text="New Intervention group size: "+str(new_data['group-rct'].value_counts().loc['intervention'])+ '('+ str(round(100*new_data['group-rct'].value_counts(normalize=True).loc['intervention'],0))+'%)').pack()
             tk.Label(self.balanceframe, text="").pack()
         except KeyError:
             pass
@@ -367,8 +368,16 @@ class gui(tk.Frame):
                         sns.barplot(hue=df_pos['group-rct'], y=df_pos['Percentage'], x=df_pos[self.strat_columns[i]], zorder=1,ax=ax_curr)#,
 
                         bpt.set_ylabel('Percentage',fontsize='18');
+
+                        
+                        all_frequencies = pd.crosstab(new_data[self.strat_columns[i]],new_data['group-rct'])
+
+                        chisq, p_val = stats.chisquare(all_frequencies['control'].values,
+                                                       all_frequencies['intervention'].values)
+
+                        bpt.set_xlabel(self.strat_columns[i] + ', p-value: '+ str(round(p_val,3)),fontsize='18');
                         #bpt.set_title(self.strat_columns[i], horizontalalignment='center', verticalalignment='top',fontsize=22);
-                        bpt.xaxis.label.set_size(18);
+                        #bpt.xaxis.label.set_size(18);
                         #bpt.set_xlabel('');
                         #print(self.sample_p)
                         bpt.axhline(y=100.-float(self.sample_p), c="darkred", linewidth=2, zorder=3)
@@ -401,9 +410,12 @@ class gui(tk.Frame):
                             r, g, b, a = patch.get_facecolor()
                             #patch.set_facecolor((r, g, b, .3))
                             #patch.set_linestyle('dashed')
-                        ax_bp.xaxis.label.set_size(18);
+                        
                         ax_bp.yaxis.label.set_size(18);
-                        ax_bp.set_xlabel('');
+                        t, p_val = stats.ttest_ind(new_data[new_data['group-rct']=='control'][self.strat_columns[i]],
+                                                    new_data[new_data['group-rct']=='intervention'][self.strat_columns[i]])
+
+                        ax_bp.set_xlabel('p-value: '+ str(round(p_val),3),fontsize='18');
                         plt.legend([]);
                         plt.ylim([new_data[self.strat_columns[i]].astype('float').min(), new_data[self.strat_columns[i]].astype('float').max()+1])
                         handles,labels = ax_bp.get_legend_handles_labels()
@@ -428,7 +440,12 @@ class gui(tk.Frame):
                         else:
                             lgd = bpt.legend([],[], loc='upper left', bbox_to_anchor=(1, 0.5), fontsize=14)
 
-                        bpt.xaxis.label.set_size(18);
+                        all_frequencies = pd.crosstab(base_data[self.strat_columns[i]],base_data['group-rct'])
+
+                        chisq, p_val = stats.chisquare(all_frequencies['control'].values,
+                                                       all_frequencies['intervention'].values)
+
+                        bpt.set_xlabel(self.strat_columns[i] + ', p-value: '+ str(round(p_val,3)),fontsize='18');
                         plt.ylim([0,100]);
                         new_legends += 1
                     else:
@@ -438,8 +455,13 @@ class gui(tk.Frame):
                                             ax=ax_curr)
                         plt.ylim([base_data[self.strat_columns[i]].astype('float').min(), base_data[self.strat_columns[i]].astype('float').max()+1])
                         lgd = ax_bp.legend([],[], loc='upper left', bbox_to_anchor=(1, 0.5), fontsize=14)
-                        ax_bp.set_xlabel('');
-                        ax_bp.xaxis.label.set_size(18);
+
+                        t, p_val = stats.ttest_ind(base_data[base_data['group-rct']=='control'][self.strat_columns[i]],
+                                                    base_data[base_data['group-rct']=='intervention'][self.strat_columns[i]])
+
+                        ax_bp.set_xlabel('p-value: '+ str(round(p_val,3)),fontsize='18');
+
+
                         ax_bp.yaxis.label.set_size(18);
             
             plt.tight_layout()
@@ -458,7 +480,7 @@ class gui(tk.Frame):
             self.plot.pack()#side = "bottom", fill = "both", expand = "yes")
 
         else:
-            tk.Label(self.balanceframe, text="Pure randomization selected. No variables to compare.",font=(26)).pack()
+            tk.Label(self.balanceframe, text="Pure randomization selected. No stratifying variables to plot.",font=(26)).pack()
 
         tk.Button(self.balanceframe, text="Back to main window",command=lambda:self.main_frame()).pack()#.mainframe.tkraise()).pack()
         tk.Button(self.balanceframe,text="Exit",command=tk.sys.exit).pack()
@@ -473,13 +495,13 @@ class gui(tk.Frame):
         self.statusText_ffe = tk.StringVar(self.firstframeexisting)
         self.statusText_ffe.set("")
 
-        self.label = tk.Label(self.firstframeexisting, text="Please load the _RCT file that was already randomized: ")
+        self.label = tk.Label(self.firstframeexisting, text="Please load _RCT file: ")
         self.label.pack()
         self.entry1 = tk.Entry(self.firstframeexisting, width=50)
         self.entry1.pack()
         
         tk.Button(self.firstframeexisting, text="Browse", command=lambda: self.button_browse_callback_1()).pack()
-        tk.Label(self.firstframeexisting, text="Please load a file with new individuals to randomize: ").pack()
+        tk.Label(self.firstframeexisting, text="Please load a file with new units of analysis to randomize: ").pack()
     
         self.entry2 = tk.Entry(self.firstframeexisting, width=50)
         self.entry2.pack()
@@ -626,7 +648,7 @@ class gui(tk.Frame):
         #print(new_categories)
         for k,value in new_categories.iteritems():
             for nvals in value:
-                result = tkMessageBox.askyesno("Warning","The column '"+str(k)+"' has a new value "+str(nvals)+'. Do you accept it?')
+                result = tkMessageBox.askyesno("Warning","Column '"+str(k)+"' has a new value "+str(nvals)+'. Do you accept it?')
                 if result == False:
                     tkMessageBox.showinfo("Attention","Please update your file and input it again.")
                     break
