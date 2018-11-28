@@ -332,7 +332,7 @@ class gui(tk.Frame):
 
         try:
             tk.Label(self.balanceframe, text="").pack()
-            tk.Label(self.balanceframe, text="Target control group size: "+str(int(self.sample_p))+"% of population").pack()
+            tk.Label(self.balanceframe, text="Target control group size: "+str(100.- int(self.sample_p))+"% of population").pack()
             tk.Label(self.balanceframe, text="Control group size: "+str(base_data['group-rct'].value_counts().loc['control'])+'('+str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['control'],0))+'%)').pack()
             tk.Label(self.balanceframe, text="Intervention group size: "+str(base_data['group-rct'].value_counts().loc['intervention'])+ '('+ str(round(100*base_data['group-rct'].value_counts(normalize=True).loc['intervention'],0))+'%)').pack()
             if not new_data.empty:
@@ -412,10 +412,16 @@ class gui(tk.Frame):
                             #patch.set_linestyle('dashed')
                         
                         ax_bp.yaxis.label.set_size(18);
-                        t, p_val = stats.ttest_ind(new_data[new_data['group-rct']=='control'][self.strat_columns[i]],
-                                                    new_data[new_data['group-rct']=='intervention'][self.strat_columns[i]])
+                        print("new_data[new_data['group-rct']=='control'][self.strat_columns[i]].dropna()")
+                        print(new_data[new_data['group-rct']=='control'][self.strat_columns[i]].dropna())
 
-                        ax_bp.set_xlabel('p-value: '+ str(round(p_val),3),fontsize='18');
+                        print("new_data[new_data['group-rct']=='intervention'][self.strat_columns[i]].dropna()")
+                        print(new_data[new_data['group-rct']=='intervention'][self.strat_columns[i]].dropna())
+
+                        t, p_val = stats.ttest_ind(new_data[new_data['group-rct']=='control'][self.strat_columns[i]].dropna().astype(float),
+                                                    new_data[new_data['group-rct']=='intervention'][self.strat_columns[i]].dropna().astype(float))
+
+                        ax_bp.set_xlabel('p-value: '+ str(round(p_val,3)),fontsize='18');
                         plt.legend([]);
                         plt.ylim([new_data[self.strat_columns[i]].astype('float').min(), new_data[self.strat_columns[i]].astype('float').max()+1])
                         handles,labels = ax_bp.get_legend_handles_labels()

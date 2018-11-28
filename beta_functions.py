@@ -77,7 +77,7 @@ def stratify(self):
         data_set.loc[age_index,'age'] = age_copy 
     
     if not self.pure_randomization_boolean:
-        name_log = self.filename.rsplit("|")[0]+"|"+",".join(selected_columns)+'-'+str(int(100-self.sample_p))+str(dt.datetime.now())+'_log.xlsx'
+        name_log = self.filename.rsplit(".")[0]+"|"+",".join(selected_columns)+'_'+str(todaysdate)+'_'+str(int(len(data_set)))+'_'+str(int(100-self.sample_p))+'_log'+'.xlsx'
         self.name = self.filename.rsplit(".")[0]+"|"+",".join(selected_columns)+'_'+str(todaysdate)+'_'+str(int(len(data_set)))+'_'+str(int(100-self.sample_p))+'_RCT'+'.xlsx'
         writer = pd.ExcelWriter(name_log, engine = 'xlsxwriter')
         for col in self.strat_columns:
@@ -86,7 +86,7 @@ def stratify(self):
             else:
                 pd.crosstab(data_set[col], data_set['group-rct']).to_excel(writer, sheet_name=col)
     else:
-        name_log = self.filename.rsplit("|")[0]+"|"+str(self.pure_randomization_text)+'-'+str(int(100-self.sample_p))+str(dt.datetime.now())+'_log.xlsx'
+        name_log = self.filename.rsplit(".")[0]+"|"+str(self.pure_randomization_text)+'_'+str(todaysdate)+'_'+str(int(len(data_set)))+'_'+str(int(100-self.sample_p))+'_log'+'.xlsx'
         self.name = self.filename.rsplit(".")[0]+"|"+str(self.pure_randomization_text)+'_'+str(todaysdate)+'_'+str(int(len(data_set)))+'_'+str(int(100-self.sample_p))+'_RCT'+'.xlsx'
         writer = pd.ExcelWriter(name_log, engine = 'xlsxwriter')
         data_set['group-rct'].value_counts().to_excel(writer, sheet_name=self.pure_randomization_text)
@@ -151,7 +151,8 @@ def update_stratification(self):
 
     data_new['group-rct'] = ''
     data_temp = data_new.append(data_set.ix[:, :]) # there will be a problem with indexing, I can see it coming.
-    data_temp, age_copy, age_index = group_age(data_temp)
+    if 'age' in self.strat_columns:
+        data_temp, age_copy, age_index = group_age(data_temp)
 
     #print(selected_columns)
 
@@ -378,7 +379,8 @@ def update_stratification(self):
     data_new['batch'] = int(np.max(data_set.batch.value_counts().index.astype('int').values)) + int(1)
 
     self.total_data = data_new.append(data_set)
-    self.total_data['age'] = age_copy
+    if 'age' in self.strat_columns:
+        self.total_data['age'] = age_copy
     self.total_data['date'] = pd.to_datetime(self.total_data['date']).dt.date
 
     if not self.pure_randomization_boolean: 
@@ -397,7 +399,9 @@ def update_stratification(self):
     data_new.to_excel(self.name_static, na_rep='',index=False)
     self.total_data.to_excel(self.name, na_rep='')
 
-    name_log = self.filename1.rsplit(".")[0]+todaysdate+'_log.xlsx'
+    name_log = self.filename1.rsplit("|")[0]+"|"+str(self.pure_randomization_text)+'_'+todaysdate+'_'+str(int(len(self.total_data)))+'_'+str(int(int(self.sample_p)))+'_log'+'.xlsx'
+
+
     writer = pd.ExcelWriter(name_log, engine = 'xlsxwriter')
     for col in self.strat_columns:
         if col=="age":
